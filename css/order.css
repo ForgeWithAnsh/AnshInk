@@ -1,0 +1,6 @@
+/* AnshInk - order page (html/order.html) */
+.opt{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.opt div{border:1px solid var(--ln);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:background .2s}
+.opt div.on{border-color:var(--ac);background:var(--ac);color:#fbf3e6}.opt div.on .mu{color:#e8d9c4}
+.tot{font-size:26px;font-weight:bold}
+.pre{width:100%;max-height:200px;object-fit:contain;margin-top:6px;border-radius:8px;background:#efe3d0}
