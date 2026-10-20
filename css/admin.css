@@ -1,0 +1,4 @@
+/* AnshInk - artist panel (html/admin.html) */
+.ord{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:14px;margin-bottom:12px}
+.ord select{margin-top:4px}
+.ord summary{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;cursor:pointer;list-style:none}.ord summary::-webkit-details-marker{display:none}.admin-thumb{width:72px;height:72px;object-fit:cover;border-radius:9px;background:#efe3d0}.ord[open]{box-shadow:0 8px 24px #5c3f2b20}.ord-body{padding-top:12px}
