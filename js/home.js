@@ -3,10 +3,13 @@
 if('scrollRestoration' in history)history.scrollRestoration='manual';
 scrollTo(0,0);
 let RV={};
-$('#sq').textContent='\u201c'+CFG.quote+'\u201d';
+const quoteKey='anshink-last-quote';let previousQuote=-1;try{previousQuote=Number(localStorage.getItem(quoteKey))}catch(e){}
+let quoteIndex=Math.floor(Math.random()*CFG.quotes.length);if(CFG.quotes.length>1&&quoteIndex===previousQuote)quoteIndex=(quoteIndex+1+Math.floor(Math.random()*(CFG.quotes.length-1)))%CFG.quotes.length;try{localStorage.setItem(quoteKey,String(quoteIndex))}catch(e){}
+$('#sq').textContent='\u201c'+CFG.quotes[quoteIndex]+'\u201d';
 $('#hi').src=BASE+CFG.hero;
 $('#hn').textContent=CFG.artist;$('#hb').textContent=CFG.bio;
-$('#about').innerHTML=CFG.story.map(t=>'<p>'+esc(t)+'</p>').join('')+'<ul class="det">'+CFG.about.map(x=>'<li><b>'+x[0]+':</b> '+esc(x[1])+'</li>').join('')+'</ul><p><b>Questions or custom requests?</b><br>Email <a href="mailto:'+CFG.email+'">'+CFG.email+'</a> or DM <a href="https://instagram.com/'+CFG.insta+'" target="_blank" rel="noopener">@'+CFG.insta+'</a> on Instagram.</p>';
+const today=new Date(),birth=new Date(2008,4,11);let age=today.getFullYear()-birth.getFullYear();if(today.getMonth()<birth.getMonth()||(today.getMonth()===birth.getMonth()&&today.getDate()<birth.getDate()))age--;
+$('#about').innerHTML=CFG.story.map(t=>'<p>'+esc(t)+'</p>').join('')+'<ul class="det">'+CFG.about.map(x=>'<li><b>'+x[0]+':</b> '+esc(x[0]==='Age / City'?age+' · '+x[1]:x[1])+'</li>').join('')+'</ul><p><b>Questions or custom requests?</b><br>Email <a href="mailto:'+CFG.email+'">'+CFG.email+'</a> or DM <a href="https://instagram.com/'+CFG.insta+'" target="_blank" rel="noopener">@'+CFG.insta+'</a> on Instagram.</p>';
 
 /* scroll animations start only after the quote screen is gone */
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const t=e.target;t.classList.add('in');io.unobserve(t);setTimeout(()=>t.style.transitionDelay='',1400)}}),{threshold:.15,rootMargin:'0px 0px -12% 0px'});
