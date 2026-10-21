@@ -5,6 +5,11 @@ firebase.initializeApp(CFG.firebase);
 const auth=firebase.auth(),db=firebase.firestore(),TS=()=>Date.now();
 let me=null,O={};
 const $=s=>document.querySelector(s);
+const loading=document.createElement('div');loading.id='page-loading';loading.setAttribute('role','status');loading.setAttribute('aria-live','polite');loading.innerHTML='<span class="loading-spinner" aria-hidden="true"></span>Loading…';document.body.appendChild(loading);
+let authStateReady=false,assetsReady=document.readyState==='complete';
+function syncPageLoading(){if(authStateReady&&assetsReady){setTimeout(()=>loading.classList.add('done'),180)}}
+window.addEventListener('load',()=>{assetsReady=true;syncPageLoading()},{once:true});
+setTimeout(()=>loading.classList.add('done'),15000);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=(m,ms=3200)=>{const t=$('#t');t.textContent=m;t.style.display='block';clearTimeout(O.tt);O.tt=setTimeout(()=>t.style.display='none',ms)};
 const show=h=>{$('#mb').innerHTML=h;$('#m').classList.add('on')},hide=()=>$('#m').classList.remove('on');
@@ -26,6 +31,7 @@ auth.onAuthStateChanged(async u=>{
     me={id:u.uid,email:u.email||p.email||'',phone:u.phoneNumber?u.phoneNumber.replace('+91',''):(p.phone||''),name:p.name||u.displayName||'',address:p.address||p.addr||'',pincode:p.pincode||p.pin||'',done:!!p.done,adm:u.email==CFG.adminEmail&&u.emailVerified};
   }
   ready=true;
+  authStateReady=true;syncPageLoading();
   // new users must finish their profile first
   if(me&&!me.done&&!location.pathname.endsWith('account.html')){try{sessionStorage.setItem('ai_next',location.href)}catch(e){}location.href=PG('account')+'?first=1';return}
   if(me&&O.ao){O.ao=0;hide();toast('Logged in')}
