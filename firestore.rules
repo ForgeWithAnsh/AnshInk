@@ -10,6 +10,11 @@ service cloud.firestore {
     function onlyChanges(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
+    function orderEmailMatches(orderId, email) {
+      let order = get(/databases/$(database)/documents/orders/$(orderId)).data;
+      return order.email == email
+        || get(/databases/$(database)/documents/users/$(order.uid)).data.email == email;
+    }
 
     match /users/{uid} {
       allow read, write: if (signedIn() && request.auth.uid == uid) || isAdmin();
@@ -19,6 +24,22 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.value == 1;
       allow update: if signedIn() && request.resource.data.value == resource.data.value + 1;
+    }
+
+    // Documents in this collection are consumed by Firebase's Trigger Email extension.
+    // Customers can only queue one notification per own order, addressed to the artist.
+    match /mail/{mailId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['to', 'orderId', 'message'])
+        && request.resource.data.orderId is string
+        && request.resource.data.message.subject is string
+        && request.resource.data.message.text is string
+        && request.resource.data.message.html is string
+        && ((request.resource.data.to == 'forgewithansh@gmail.com'
+             && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.uid == request.auth.uid
+             && mailId == 'order-' + request.resource.data.orderId)
+            || (isAdmin() && orderEmailMatches(request.resource.data.orderId, request.resource.data.to)));
+      allow read, update, delete: if isAdmin();
     }
 
     match /reviews/{rid} {
