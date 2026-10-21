@@ -28,22 +28,21 @@ Do not upload just a few files through GitHub's web interface: the update includ
 
 ## Firebase setup
 
-### Authentication and phone sign-in
+### Authentication
 
-1. In Firebase Console, open **Authentication > Sign-in method** and enable **Phone** (and the methods you use).
-2. Under **Authentication > Settings > Authorized domains**, add `forgewithansh.github.io` (domain only, no `https://` and no `/AnshInk`). Also add `localhost` if testing locally.
-3. In **Authentication > Settings > SMS region policy**, allow India (`IN`) for testing/real Indian numbers. Firebase may require a linked Cloud Billing account for sending real SMS. Phone sign-in on the web also uses a reCAPTCHA challenge. For development, use Firebase's fictional test phone numbers instead of repeatedly sending paid SMS.
-4. Test with the deployed website. If it fails, open the browser developer console and note the Firebase error code; `auth/unauthorized-domain`, reCAPTCHA errors, and SMS-region/billing restrictions need different fixes.
+1. The site currently offers Google sign-in and email/password. Phone/OTP login was removed because Firebase charges for verification SMS.
+2. Under **Authentication > Settings > Authorized domains**, add `forgewithansh.github.io` (domain only, no `https://` and no `/AnshInk`).
+3. Under **Authentication > Sign-in method**, keep Google and Email/Password enabled. You can disable Phone in Firebase too, but it is not required for this code update.
+4. Test both login methods on the deployed website.
 
-### Firestore rules and email notifications
+### Firestore rules and notifications
 
 1. In Firebase Console, open **Firestore Database > Rules**.
 2. Replace the complete rules text with the complete contents of this repository's `firestore.rules`, then click **Publish**. Do not paste only a fragment.
-3. To deliver order/progress emails, install Firebase's **Trigger Email** extension (`firestore-send-email`) and configure it to watch the `mail` collection. It needs an SMTP provider account and a verified sender email. Keep SMTP credentials in the extension configuration, never in the website files.
-4. The extension requires the Firebase **Blaze (pay as you go)** plan. Set a budget alert in Google Cloud Billing and review any provider charges before enabling it.
-5. Submit a test order and check `forgewithansh@gmail.com`; then update the order to “Sketching started” and “Sketching finished” and check the customer's email. The website creates the email records; the extension is what sends them.
+3. No rule change is needed to remove phone login: Firebase Authentication providers are configured separately from Firestore rules.
+4. The website currently shows order progress in My Orders but does not deliver email or push notifications. The Trigger Email extension is not configured, so queued `mail` documents do not send messages by themselves.
 
-Firebase setup guides: [Phone sign-in](https://firebase.google.com/docs/auth/web/phone-auth), [Trigger Email extension](https://firebase.google.com/docs/extensions/official/firestore-send-email), and [installing extensions](https://firebase.google.com/docs/extensions/install-extensions).
+Without the Firebase extension, automated notifications need a separate trusted service (for example, a small server/serverless endpoint connected to an email provider). Browser push is also possible with FCM, but needs a service worker and a trusted sender. Manual email/WhatsApp is the zero-setup fallback. Never put SMTP or API secrets in this static website. No notification service is connected yet.
 
 ## Payment links
 
@@ -51,16 +50,7 @@ The **Pay here** button opens the payment URL entered for that order in the arti
 
 Razorpay has a [Payment Links guide](https://razorpay.com/learn/payment-links-collect-payments-without-website/). Availability and onboarding requirements depend on your account.
 
-## Email notifications
-The site queues email jobs in Firestore's `mail` collection. To deliver them:
-
-1. In Firebase Console > Extensions, install **Trigger Email** (`firestore-send-email`).
-2. Choose `mail` as the collection to watch.
-3. Configure it with SMTP credentials from an email delivery provider (for example SendGrid, Mailgun, or another SMTP service) and set a verified sender address.
-4. Publish the updated `firestore.rules` in Firebase > Firestore > Rules.
-5. Place a test order, then check the extension's logs and your artist inbox. Change an order to “Sketching started” and “Sketching finished” to test customer notices.
-
-New order emails go to `forgewithansh@gmail.com`; progress emails go to the email saved on the order. Do not put SMTP credentials in this static website. The extension keeps them on the Firebase side. See Firebase's [Trigger Email setup guide](https://firebase.google.com/docs/extensions/official/firestore-send-email).
+Google Pay can accept UPI payments, but its [official website integration](https://developers.google.com/pay/india/api/web/intro) requires verified merchant/UPI details and payment-status handling. A personal GPay QR/UPI payment is possible as a manual transfer, but the artist would need to verify each payment manually and it does not securely confirm the matching order automatically. For this website's existing per-order hosted-link flow, Razorpay is the more practical fit; no payment provider has been connected yet.
 
 ## Add a new sketch
 Put the photo in `images/` and add a line to the `SK` list in `js/config.js`.
