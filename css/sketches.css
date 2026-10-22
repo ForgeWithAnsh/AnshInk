@@ -14,6 +14,9 @@
 .scard .x{position:absolute;top:6px;right:6px;background:#a33;color:#fff;border:0;border-radius:14px;padding:3px 9px;font-size:12px;cursor:pointer}
 .scard .feature-toggle{position:absolute;top:6px;left:6px;background:#fffaf1;color:var(--ac);border:1px solid var(--ln);border-radius:14px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px #0002}
 .scard .feature-toggle.is-featured{background:var(--ac);color:#fffaf1}
+.sketch-reorder{position:absolute;left:50%;bottom:45px;display:flex;gap:6px;transform:translateX(-50%)}
+.sketch-reorder button{width:34px;height:32px;border:1px solid var(--ln);border-radius:9px;background:#fffaf1;color:var(--ac);font-size:19px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px #0002}
+.sketch-reorder button:hover{background:var(--ac);color:#fffaf1}
 .feature-choice{display:flex;align-items:center;gap:9px;margin:12px 0}
 .feature-choice input{width:auto;margin:0;accent-color:var(--ac)}
 .sbig{width:100%;max-height:60vh;object-fit:contain;border-radius:8px;background:#efe3d0}
