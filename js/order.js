@@ -88,7 +88,11 @@ function showDetailsStep() {
   showOrderStep(`
     <h2>Your details</h2>
     <label for="photo">Reference photo (clear, well-lit)</label>
-    <input id="photo" type="file" accept="image/*" onchange="loadOrderPhoto(this)">
+    <label class="photo-upload" for="photo">
+      <span class="photo-upload-icon" aria-hidden="true">↑</span>
+      <span class="photo-upload-copy"><strong>Choose a photo</strong><small>JPG, PNG or another image format</small></span>
+      <input id="photo" class="photo-upload-input" type="file" accept="image/*" onchange="loadOrderPhoto(this)">
+    </label>
     ${order.photo ? `<img class="pre" src="${order.photo}" alt="Reference photo preview">` : ''}
     <label for="title">Name this sketch (optional)</label>
     <input id="title" value="${esc(order.title)}" placeholder="e.g. Mom's portrait">
