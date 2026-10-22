@@ -17,7 +17,8 @@ onUser(async user => {
     main.innerHTML = `
       <div class="box">
         <h2>Artist panel</h2>
-        <p class="mu">Artist access only. Log in with Google as ${esc(CFG.adminEmail)}.</p>
+        <p class="mu">Artist access only. Sign in with the verified Google account ${esc(CFG.adminEmail)}.</p>
+        <button class="btn o" onclick="auth.signOut()">Log out and switch account</button>
       </div>
     `;
     return;
@@ -31,7 +32,18 @@ onUser(async user => {
     render();
   } catch (error) {
     console.error('Could not load orders:', error);
-    main.innerHTML = '<div class="box"><p>Could not load orders.</p></div>';
+    const code = error.code || 'unknown error';
+    const message = code.includes('permission-denied')
+      ? 'Firebase denied access. Confirm you are signed in with the verified admin Google account and publish the current firestore.rules file.'
+      : 'Could not load orders. Check your connection and reload the page.';
+    main.innerHTML = `
+      <div class="box">
+        <h2>Artist panel could not load</h2>
+        <p>${esc(message)}</p>
+        <p class="mu">Error: ${esc(code)}</p>
+        <button class="btn" onclick="location.reload()">Try again</button>
+      </div>
+    `;
   }
 });
 

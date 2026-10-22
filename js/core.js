@@ -132,7 +132,8 @@ auth.onAuthStateChanged(async user => {
   authStateReady = true;
   updateLoadingIndicator();
 
-  if (me && !me.done && !location.pathname.endsWith('account.html')) {
+  // The artist should be able to reach the admin panel even without a customer profile.
+  if (me && !me.adm && !me.done && !location.pathname.endsWith('account.html')) {
     try {
       sessionStorage.setItem('ai_next', location.href);
     } catch (error) {
