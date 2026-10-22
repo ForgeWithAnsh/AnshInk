@@ -68,3 +68,40 @@
     overflow: auto;
   }
 }
+
+/* Tablets can report a wider CSS viewport in landscape or desktop mode. */
+@media (min-width: 601px) and (max-width: 1366px) and (pointer: coarse) {
+  main.page.wide {
+    width: min(calc(100vw - 32px), 1120px) !important;
+    max-width: calc(100vw - 32px) !important;
+    padding-inline: 16px;
+  }
+
+  main.page.wide #list,
+  main.page.wide .sgrid {
+    width: 100%;
+    min-width: 0;
+  }
+
+  main.page.wide .sgrid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    column-gap: clamp(10px, 2vw, 18px);
+    row-gap: clamp(10px, 2vw, 16px);
+  }
+
+  main.page.wide .sgrid > .scard {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  main.page.wide .sgrid > .scard > img {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+}
