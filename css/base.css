@@ -55,3 +55,48 @@ input,select,textarea{width:100%;padding:10px;border:1px solid var(--ln);border-
 @keyframes pop{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}.hero2 img,.hero2>div{opacity:1!important}}
 @media(max-width:600px){header{justify-content:center;flex-wrap:wrap;gap:2px;padding:8px 10px}.logo{width:100%;text-align:center;font-size:21px;line-height:1.25}nav{width:100%;justify-content:center;flex-wrap:wrap;gap:2px 4px}nav>a{padding:5px 6px;font-size:14px}.pfb{margin-left:0}.pfb svg{width:34px;height:34px}.page{width:100%;max-width:600px;margin:16px auto;padding:0 14px 24px}.page.wide{max-width:600px}.box{padding:16px}.row{justify-content:center}.row>.btn{flex:1 1 130px;text-align:center}.tabs{flex-wrap:wrap}.tabs button{min-width:30%}.sgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.scard .t{font-size:14px}.modal{padding:10px}.modal .box{max-width:100%}footer{padding:20px 14px;font-size:14px}}
+/* Center the main layouts at tablet widths, where fixed desktop widths can overflow. */
+@media (min-width: 601px) and (max-width: 1024px) {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: clip !important;
+  }
+
+  #hdr,
+  #ftr {
+    width: 100%;
+  }
+
+  header {
+    width: min(calc(100% - 40px), 960px) !important;
+    margin-inline: auto !important;
+  }
+
+  .page {
+    width: min(calc(100% - 40px), 880px) !important;
+    max-width: none !important;
+    margin-inline: auto !important;
+  }
+
+  .page.wide {
+    width: min(calc(100% - 40px), 1000px) !important;
+  }
+
+  .hero2 {
+    width: min(calc(100% - 40px), 960px) !important;
+    margin-inline: auto !important;
+  }
+
+  .grid,
+  .about {
+    margin-inline: auto !important;
+  }
+}
