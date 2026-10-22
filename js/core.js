@@ -107,6 +107,14 @@ auth.onAuthStateChanged(async user => {
     me = null;
   } else {
     let profile = {};
+    let signInProvider = '';
+    try {
+      const token = await user.getIdTokenResult();
+      signInProvider = token.signInProvider || '';
+    } catch (error) {
+      console.error('Could not read the sign-in provider:', error);
+    }
+
     try {
       const snapshot = await db.collection('users').doc(user.uid).get();
       profile = snapshot.exists ? snapshot.data() : {};
@@ -124,7 +132,7 @@ auth.onAuthStateChanged(async user => {
       pincode: profile.pincode || profile.pin || '',
       done: Boolean(profile.done),
       adm: (user.email || '').trim().toLowerCase() === CFG.adminEmail.toLowerCase()
-        && user.emailVerified,
+        && (user.emailVerified || signInProvider === 'google.com'),
       providerId: provider.providerId || ''
     };
   }

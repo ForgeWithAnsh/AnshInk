@@ -7,7 +7,7 @@ onUser(async user => {
       <div class="box">
         <h2>Artist panel</h2>
         <p class="mu">Please log in with Google.</p>
-        <button class="btn" onclick="login()">Login / Sign up</button>
+        <button class="btn" onclick="artistGoogleLogin()">Continue with Google</button>
       </div>
     `;
     return;
@@ -16,13 +16,17 @@ onUser(async user => {
   if (!isAdm()) {
     const signedInEmail = (user.email || '').trim().toLowerCase();
     const intendedArtist = CFG.adminEmail.toLowerCase();
-    const accessHelp = signedInEmail === intendedArtist && !user.emailVerified
-      ? `Firebase reports that ${esc(CFG.adminEmail)} is not verified. Sign in with that account through Google, or verify its email address, then reload.`
+    const hasGoogleIdentity = user.providerData.some(item => item.providerId === 'google.com');
+    const accessHelp = signedInEmail === intendedArtist && !user.emailVerified && !hasGoogleIdentity
+      ? `This email/password account has not been verified yet. Verify ${esc(CFG.adminEmail)}, then reload. You can also sign out and continue with Google using that same account.`
       : `Artist access requires the verified Google account ${esc(CFG.adminEmail)}. The currently signed-in account does not match.`;
     main.innerHTML = `
       <div class="box">
         <h2>Artist panel</h2>
         <p class="mu">${accessHelp}</p>
+        ${signedInEmail === intendedArtist && !user.emailVerified && !hasGoogleIdentity
+          ? '<button class="btn sm" onclick="sendArtistVerification()">Send verification email</button>'
+          : ''}
         <button class="btn o" onclick="auth.signOut()">Log out and switch account</button>
       </div>
     `;
@@ -51,6 +55,21 @@ onUser(async user => {
     `;
   }
 });
+
+function artistGoogleLogin() {
+  O.tab = 'g';
+  login();
+}
+
+async function sendArtistVerification() {
+  try {
+    await auth.currentUser.sendEmailVerification();
+    toast('Verification email sent. Verify your address, then reload this page.', 6000);
+  } catch (error) {
+    console.error('Could not send artist verification email:', error);
+    toast(`Could not send the verification email: ${error.code || 'unknown error'}`, 7000);
+  }
+}
 
 function render() {
   const orders = O.list.slice().sort((a, b) => b.at - a.at);
