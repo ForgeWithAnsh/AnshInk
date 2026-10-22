@@ -30,7 +30,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly([
-          'title', 'category', 'description', 'photos', 'legacyId', 'createdAt'
+          'title', 'category', 'description', 'photos', 'legacyId', 'createdAt', 'featured'
         ])
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
@@ -50,6 +50,7 @@ service cloud.firestore {
         && (request.resource.data.photos.size() < 4
           || (request.resource.data.photos[3] is string && request.resource.data.photos[3].size() <= 900000))
         && request.resource.data.createdAt is int
+        && (!('featured' in request.resource.data) || request.resource.data.featured is bool)
         && (!('legacyId' in request.resource.data)
           || request.resource.data.legacyId == null
           || request.resource.data.legacyId in ['j', 'e', 'c', 'a', 'b', 'd']);

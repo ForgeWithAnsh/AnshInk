@@ -62,7 +62,7 @@ Google Pay can accept UPI payments, but its [official website integration](https
 
 ## Manage sketches and migrate the current gallery
 
-The home page, All sketches page, and review page now use the Firestore `gallery` collection. Sketch images are no longer listed in `js/config.js`. Sign in with the verified Google account `forgewithansh@gmail.com`, open **All sketches**, choose **Add a sketch**, enter a title/category/description, and upload up to four photos. The first photo is the cover. Use **Remove** on a sketch card to take it off the site.
+The home page, All sketches page, and review page use the Firestore `gallery` collection. All uploaded sketches appear under **All sketches**; only sketches you mark **Show this sketch on the home page** appear in the homepage showcase. You can also use **Feature on home** / **On home** on each All sketches card to change that selection later. Sign in with the verified Google account `forgewithansh@gmail.com`, open **All sketches**, choose **Add a sketch**, enter a title/category/description, and upload up to four photos. The first photo is the cover. Use **Remove** on a sketch card to take it off the site.
 
 To move the current homepage sketches into Firebase, do this once after publishing the code and Firestore rules:
 
@@ -79,4 +79,4 @@ To move the current homepage sketches into Firebase, do this once after publishi
    | The Look | `thelook-aesthetic.png`, `thelook-reference.png`, `thelook-sketch.jpg` | The Look |
    | Om Sai Ram Portrait | `omsairam-aesthetic.png`, `omsairam-comparison.png`, `omsairam-reference.jpg`, `omsairam-sketch.jpg` | Om Sai Ram Portrait |
 
-4. Confirm each item appears on the home page and All sketches page. The existing local photo files are retained so you can upload them; after migration, they are not used by the public gallery code. The six photos that were empty placeholders in the old repository are unavailable, so only upload originals you actually have.
+4. All uploaded items appear on All sketches. Mark only your chosen best sketches to feature them on the home page. The existing local photo files are retained so you can upload them; after migration, they are not used by the public gallery code. The six photos that were empty placeholders in the old repository are unavailable, so only upload originals you actually have.
