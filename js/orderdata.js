@@ -1,8 +1,65 @@
-/* AnshInk - order helpers shared by orders.html and admin.html */
-const tot=x=>(x.finalPrice??x.fin??x.amt)+(x.deliveryCharge??x.del??0);
-const stl=x=>x.st==-1?'Declined':x.st==-2?'Cancelled (not paid in 3 days)':x.st==-3?'Refunded':x.st==-4?'Cancelled by you':x.rf=='req'?'Refund requested':STAT[x.st];
-const trk=st=>`<div class="trk">${STAT.map((s,i)=>`<div class="${i<=st?'d':''}">${s}</div>`).join('')}</div>`;
-async function ords(all){const q=all?db.collection('orders'):db.collection('orders').where('uid','==',me.id);const sn=await q.get();return sn.docs.map(d=>{const x=d.data();return {...x,id:d.id,st:x.status??x.st??0,addr:x.address||x.addr||'',pin:x.pincode||x.pin||'',amt:x.amount??x.amt??0,fin:x.finalPrice??x.fin,del:x.deliveryCharge??x.del??0}})}
-async function upo(id,data){await db.collection('orders').doc(id).update(data);Object.assign((O.list||[]).find(o=>o.id==id)||{},data)}
-/* accepted orders that stay unpaid for 3 days are cancelled */
-async function sweep(l){const n=Date.now();for(const x of l){if(x.st==1&&x.acc&&n-x.acc>3*864e5){try{await db.collection('orders').doc(x.id).update({st:-2});x.st=-2}catch(e){}}}}
+/* Firestore order helpers shared by My Orders and the artist panel. */
+const tot = order => (order.finalPrice ?? order.fin ?? order.amt)
+  + (order.deliveryCharge ?? order.del ?? 0);
+
+function stl(order) {
+  if (order.st === -1) return 'Declined';
+  if (order.st === -2) return 'Cancelled (not paid in 3 days)';
+  if (order.st === -3) return 'Refunded';
+  if (order.st === -4) return 'Cancelled by you';
+  if (order.rf === 'req') return 'Refund requested';
+  return STAT[order.st];
+}
+
+function trk(status) {
+  return `
+    <div class="trk">
+      ${STAT.map((label, index) => `
+        <div class="${index <= status ? 'd' : ''}">${label}</div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function ords(includeAll) {
+  const query = includeAll
+    ? db.collection('orders')
+    : db.collection('orders').where('uid', '==', me.id);
+  const snapshot = await query.get();
+
+  return snapshot.docs.map(document => {
+    const data = document.data();
+    return {
+      ...data,
+      id: document.id,
+      st: data.status ?? data.st ?? 0,
+      addr: data.address || data.addr || '',
+      pin: data.pincode || data.pin || '',
+      amt: data.amount ?? data.amt ?? 0,
+      fin: data.finalPrice ?? data.fin,
+      del: data.deliveryCharge ?? data.del ?? 0
+    };
+  });
+}
+
+async function upo(id, changes) {
+  await db.collection('orders').doc(id).update(changes);
+  Object.assign((O.list || []).find(order => order.id === id) || {}, changes);
+}
+
+/* Cancel accepted orders that have remained unpaid for three days. */
+async function sweep(orders) {
+  const now = Date.now();
+
+  for (const order of orders) {
+    const unpaidTooLong = order.st === 1 && order.acc && now - order.acc > 3 * 864e5;
+    if (!unpaidTooLong) continue;
+
+    try {
+      await db.collection('orders').doc(order.id).update({ st: -2 });
+      order.st = -2;
+    } catch (error) {
+      console.error('Could not expire unpaid order:', error);
+    }
+  }
+}

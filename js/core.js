@@ -1,40 +1,158 @@
-/* AnshInk - shared helpers, Firebase setup, login state (loaded on every page) */
-const BASE=document.body.dataset.base||'';            // '' on index.html, '../' inside html/
-const PG=p=>p=='index'?BASE+'index.html':(BASE?'':'html/')+p+'.html';
+/* Shared page helpers, Firebase setup, authentication, and loading indicator. */
+const BASE = document.body.dataset.base || '';
+const PG = page => page === 'index'
+  ? `${BASE}index.html`
+  : `${BASE ? '' : 'html/'}${page}.html`;
+
 firebase.initializeApp(CFG.firebase);
-const auth=firebase.auth(),db=firebase.firestore(),TS=()=>Date.now();
-let me=null,O={};
-const $=s=>document.querySelector(s);
-const loading=document.createElement('div');loading.id='page-loading';loading.setAttribute('role','status');loading.setAttribute('aria-live','polite');loading.innerHTML='<span class="loading-spinner" aria-hidden="true"></span>Loading…';document.body.appendChild(loading);
-let authStateReady=false,assetsReady=document.readyState==='complete';
-function syncPageLoading(){if(authStateReady&&assetsReady){setTimeout(()=>loading.classList.add('done'),180)}}
-window.addEventListener('load',()=>{assetsReady=true;syncPageLoading()},{once:true});
-setTimeout(()=>loading.classList.add('done'),15000);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const toast=(m,ms=3200)=>{const t=$('#t');t.textContent=m;t.style.display='block';clearTimeout(O.tt);O.tt=setTimeout(()=>t.style.display='none',ms)};
-const show=h=>{$('#mb').innerHTML=h;$('#m').classList.add('on')},hide=()=>$('#m').classList.remove('on');
-$('#m').addEventListener('click',e=>{if(e.target.id=='m')hide()});
-const rs=n=>'₹'+Number(n).toLocaleString('en-IN');
-const err=e=>(e&&e.code?e.code.replace('auth/','').replace(/-/g,' '):'error');
-const isAdm=()=>!!me&&me.adm;
-const stars=n=>'★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n));
 
-/* resize a photo before saving it (keeps database small) */
-function rz(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,800/Math.max(im.width,im.height));c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.65))};im.src=r.result};r.readAsDataURL(f)}
+const auth = firebase.auth();
+const db = firebase.firestore();
+const TS = () => Date.now();
+const $ = selector => document.querySelector(selector);
 
-/* pages call onUser(fn): fn(me) runs once login state is known, and again whenever it changes */
-const cbs=[];let ready=false;
-function onUser(fn){cbs.push(fn);if(ready)fn(me)}
-auth.onAuthStateChanged(async u=>{
-  if(!u){me=null}else{
-    let p={};try{const d=await db.collection('users').doc(u.uid).get();p=d.exists?d.data():{}}catch(e){console.error(e)}
-    me={id:u.uid,email:u.email||p.email||'',phone:u.phoneNumber?u.phoneNumber.replace('+91',''):(p.phone||''),name:p.name||u.displayName||'',address:p.address||p.addr||'',pincode:p.pincode||p.pin||'',done:!!p.done,adm:u.email==CFG.adminEmail&&u.emailVerified};
+let me = null;
+let O = {};
+
+/* Keep the startup indicator at the top so it does not cover the page footer. */
+const loadingIndicator = document.createElement('div');
+loadingIndicator.id = 'page-loading';
+loadingIndicator.setAttribute('role', 'status');
+loadingIndicator.setAttribute('aria-live', 'polite');
+loadingIndicator.innerHTML = '<span class="loading-spinner" aria-hidden="true"></span>Loading…';
+document.body.appendChild(loadingIndicator);
+
+let authStateReady = false;
+let pageAssetsReady = document.readyState === 'complete';
+
+function updateLoadingIndicator() {
+  if (authStateReady && pageAssetsReady) {
+    setTimeout(() => loadingIndicator.classList.add('done'), 180);
   }
-  ready=true;
-  authStateReady=true;syncPageLoading();
-  // new users must finish their profile first
-  if(me&&!me.done&&!location.pathname.endsWith('account.html')){try{sessionStorage.setItem('ai_next',location.href)}catch(e){}location.href=PG('account')+'?first=1';return}
-  if(me&&O.ao){O.ao=0;hide();toast('Logged in')}
-  cbs.forEach(f=>f(me));
-  if(me&&O.cb){const f=O.cb;O.cb=null;f()}
+}
+
+window.addEventListener('load', () => {
+  pageAssetsReady = true;
+  updateLoadingIndicator();
+}, { once: true });
+
+setTimeout(() => loadingIndicator.classList.add('done'), 15000);
+
+const esc = value => String(value).replace(/[&<>"]/g, character => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;'
+}[character]));
+
+function toast(message, duration = 3200) {
+  const element = $('#t');
+  element.textContent = message;
+  element.style.display = 'block';
+  clearTimeout(O.tt);
+  O.tt = setTimeout(() => { element.style.display = 'none'; }, duration);
+}
+
+function show(content) {
+  $('#mb').innerHTML = content;
+  $('#m').classList.add('on');
+}
+
+function hide() {
+  $('#m').classList.remove('on');
+}
+
+$('#m').addEventListener('click', event => {
+  if (event.target.id === 'm') hide();
+});
+
+const rs = amount => `₹${Number(amount).toLocaleString('en-IN')}`;
+const err = error => error?.code
+  ? error.code.replace('auth/', '').replace(/-/g, ' ')
+  : 'error';
+const isAdm = () => Boolean(me && me.adm);
+const stars = rating => '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+
+/* Resize uploaded photos before writing them to Firestore. */
+function rz(file, callback) {
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1, 800 / Math.max(image.width, image.height));
+      canvas.width = image.width * scale;
+      canvas.height = image.height * scale;
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL('image/jpeg', 0.65));
+    };
+    image.src = reader.result;
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* Run page callbacks once Firebase knows the signed-in user. */
+const userCallbacks = [];
+let authReady = false;
+
+function onUser(callback) {
+  userCallbacks.push(callback);
+  if (authReady) callback(me);
+}
+
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    me = null;
+  } else {
+    let profile = {};
+    try {
+      const snapshot = await db.collection('users').doc(user.uid).get();
+      profile = snapshot.exists ? snapshot.data() : {};
+    } catch (error) {
+      console.error('Could not load user profile:', error);
+    }
+
+    const provider = user.providerData[0] || {};
+    me = {
+      id: user.uid,
+      email: user.email || profile.email || '',
+      phone: user.phoneNumber ? user.phoneNumber.replace('+91', '') : (profile.phone || ''),
+      name: profile.name || user.displayName || '',
+      address: profile.address || profile.addr || '',
+      pincode: profile.pincode || profile.pin || '',
+      done: Boolean(profile.done),
+      adm: user.email === CFG.adminEmail && user.emailVerified,
+      providerId: provider.providerId || ''
+    };
+  }
+
+  authReady = true;
+  authStateReady = true;
+  updateLoadingIndicator();
+
+  if (me && !me.done && !location.pathname.endsWith('account.html')) {
+    try {
+      sessionStorage.setItem('ai_next', location.href);
+    } catch (error) {
+      // The profile page can still be completed without session storage.
+    }
+    location.href = `${PG('account')}?first=1`;
+    return;
+  }
+
+  if (me && O.ao) {
+    O.ao = 0;
+    hide();
+    toast('Logged in');
+  }
+
+  userCallbacks.forEach(callback => callback(me));
+
+  if (me && O.cb) {
+    const callback = O.cb;
+    O.cb = null;
+    callback();
+  }
 });
