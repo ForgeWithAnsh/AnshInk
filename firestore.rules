@@ -5,7 +5,8 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn()
         && request.auth.token.email == "forgewithansh@gmail.com"
-        && request.auth.token.email_verified == true;
+        && (request.auth.token.email_verified == true
+          || request.auth.token.firebase.sign_in_provider == "google.com");
     }
     function onlyChanges(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
