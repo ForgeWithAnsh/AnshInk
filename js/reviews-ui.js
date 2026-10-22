@@ -71,34 +71,49 @@
 
   async function load() {
     main.innerHTML = '<p class="mu">Loading reviews…</p>';
+    const slowLoadTimer = setTimeout(() => {
+      main.innerHTML = `
+        <p class="mu reviews-empty">Reviews are taking longer than expected.</p>
+        <div class="reviews-retry"><button class="btn" onclick="reloadReviews()">Try again</button></div>
+      `;
+    }, 12000);
 
     try {
-      const [reviewSnapshot, sketchSnapshot] = await Promise.all([
-        db.collection('reviews').get(),
-        db.collection('gallery').get()
-      ]);
-
       sketchesById = new Map();
-      sketchSnapshot.forEach(document => {
-        const data = document.data();
-        const sketch = {
-          id: document.id,
-          title: data.title || 'Sketch',
-          photo: (data.photos || [data.photo]).filter(Boolean)[0] || ''
-        };
-        sketchesById.set(document.id, sketch);
-        const legacyId = data.legacyId || legacySketchIdForTitle(data.title);
-        if (legacyId) sketchesById.set(legacyId, sketch);
-      });
+      const reviewSnapshot = await db.collection('reviews').get();
+
+      try {
+        const sketchSnapshot = await db.collection('gallery').get();
+        sketchSnapshot.forEach(document => {
+          const data = document.data();
+          const sketch = {
+            id: document.id,
+            title: data.title || 'Sketch',
+            photo: (data.photos || [data.photo]).filter(Boolean)[0] || ''
+          };
+          sketchesById.set(document.id, sketch);
+          const legacyId = data.legacyId || legacySketchIdForTitle(data.title);
+          if (legacyId) sketchesById.set(legacyId, sketch);
+        });
+      } catch (galleryError) {
+        console.warn('Could not load gallery details for reviews:', galleryError);
+      }
 
       reviews = reviewSnapshot.docs.map(document => ({ id: document.id, ...document.data() }))
         .sort((first, second) => Number(second.t) - Number(first.t));
       render();
     } catch (error) {
       console.error('Could not load reviews:', error);
-      main.innerHTML = '<p class="mu reviews-empty">Could not load reviews. Please refresh the page.</p>';
+      main.innerHTML = `
+        <p class="mu reviews-empty">Could not load reviews. Check your connection or Firebase access, then try again.</p>
+        <div class="reviews-retry"><button class="btn" onclick="reloadReviews()">Try again</button></div>
+      `;
+    } finally {
+      clearTimeout(slowLoadTimer);
     }
   }
+
+  window.reloadReviews = load;
 
   window.editPublicReview = reviewId => {
     const review = reviews.find(item => item.id === reviewId);
