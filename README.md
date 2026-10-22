@@ -62,7 +62,7 @@ Google Pay can accept UPI payments, but its [official website integration](https
 
 ## Manage sketches and migrate the current gallery
 
-The home page, All sketches page, and review page use the Firestore `gallery` collection. All uploaded sketches appear under **All sketches**; only sketches you mark **Show this sketch on the home page** appear in the homepage showcase. You can also use **Feature on home** / **On home** on each All sketches card to change that selection later. Sign in with the verified Google account `forgewithansh@gmail.com`, open **All sketches**, choose **Add a sketch**, enter a title/category/description, and upload up to four photos. The first photo is the cover. Use **Remove** on a sketch card to take it off the site.
+The home page, All sketches page, and review page use the Firestore `gallery` collection. All uploaded sketches appear under **All sketches**; only sketches you mark **Show this sketch on the home page** appear in the homepage showcase. In the Artist view of **All sketches**, the **Homepage picks**, **Human sketches**, and **Other sketches** tabs have up/down controls to reorder their lists independently. You can also use **Feature on home** / **On home** on a sketch card to change the homepage selection. Sign in with the verified Google account `forgewithansh@gmail.com`, open **All sketches**, choose **Add a sketch**, enter a title/category/description, and upload up to four photos. The first photo is the cover. Use **Remove** on a sketch card to take it off the site.
 
 To move the current homepage sketches into Firebase, do this once after publishing the code and Firestore rules:
 
