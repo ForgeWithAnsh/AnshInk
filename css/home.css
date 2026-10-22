@@ -15,6 +15,7 @@ body.go .hero2 img{animation:pic 1.2s .2s both}
 body.go .hero2>div{animation:up 1s .5s both}
 .eyebrow{text-transform:uppercase;letter-spacing:4px;font-size:12px;color:var(--mu);margin-bottom:4px}
 .hero2 h1{font:600 68px/1 Caveat,cursive;color:var(--ac);margin:2px 0 16px}
+.hero-title{margin-bottom:6px!important}.hero-eyebrow{margin-bottom:14px}
 .hero2 p{color:var(--mu);font-size:17px}
 
 h2.sec{text-align:center;margin:30px 0 0;font-size:30px;color:var(--ac)}
@@ -22,6 +23,7 @@ h2.sec:after{content:'';display:block;height:3px;width:0;margin:8px auto 0;backg
 h2.sec.in:after{width:140px}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:16px;max-width:1100px;margin:auto}
+.home-gallery-admin,.all-sketches-cta{text-align:center}.home-gallery-admin{margin:10px 0}.all-sketches-cta{margin:6px 0 34px}
 .card{background:var(--card);border:1px solid var(--ln);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px #5c3f2b22}
 .card.rv{transition:opacity .9s ease,transform .9s ease,box-shadow .35s}
 .card.in:hover{box-shadow:0 14px 30px #5c3f2b40}
@@ -29,6 +31,10 @@ h2.sec.in:after{width:140px}
 .card:hover .main{transform:scale(1.03)}
 .th{display:flex;gap:6px;padding:8px 12px 0}.th img{width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent}.th img.on{border-color:var(--ac)}
 .cb{padding:12px}.cb h3{margin:0}.st{color:#e0a100;letter-spacing:1px}
+.card-rating{margin:6px 0}
+.rating-input{font-size:28px;cursor:pointer}
+.review-actions{margin-top:12px}
+.gallery-loading,.gallery-empty{text-align:center;grid-column:1/-1;padding:20px}
 .rev{border-top:1px solid var(--ln);padding:8px 0}
 .about{max-width:700px;margin:auto;padding:16px}.about li{margin:6px 0}
 @media(max-width:600px){.hero2{gap:20px;padding:22px 16px 12px;text-align:center}.hero2 img{max-width:420px;border-width:8px;border-bottom-width:22px}.hero2>div{min-width:0;width:100%}.hero2 h1{font-size:58px}.hero2 p{font-size:16px}h2.sec{font-size:27px}.grid{grid-template-columns:minmax(0,1fr);padding:12px;gap:14px}.card .main{height:min(82vw,340px)}.about{padding:14px 18px}}

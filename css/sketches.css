@@ -6,7 +6,8 @@
 .tab2 span{opacity:.7;font-size:13px}.tab2.on{background:var(--ac);color:#fbf3e6}
 .abar{text-align:center;margin-bottom:14px}
 .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
-.scard{position:relative;background:var(--card);border:1px solid var(--ln);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 3px 10px #5c3f2b22;animation:up .6s ease both;animation-delay:calc(var(--i,0)*70ms);transition:transform .3s,box-shadow .3s}
+.scard{position:relative;background:var(--card);border:1px solid var(--ln);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 3px 10px #5c3f2b22;animation:up .6s ease both;transition:transform .3s,box-shadow .3s}
+.scard:nth-child(6n+2){animation-delay:70ms}.scard:nth-child(6n+3){animation-delay:140ms}.scard:nth-child(6n+4){animation-delay:210ms}.scard:nth-child(6n+5){animation-delay:280ms}.scard:nth-child(6n){animation-delay:350ms}
 .scard:hover{transform:translateY(-4px);box-shadow:0 10px 22px #5c3f2b40}
 .scard img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:#efe3d0}
 .scard .t{padding:8px 10px;font-weight:bold;font-size:15px}
@@ -15,3 +16,4 @@
 .sth{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}.sth img{width:52px;height:52px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent}.sth img.on{border-color:var(--ac)}
 .none{text-align:center;color:var(--mu);padding:30px 0}
 .pre{width:100%;max-height:200px;object-fit:contain;margin-top:6px;border-radius:8px;background:#efe3d0}
+#sp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.sketch-preview{width:100%;height:140px;object-fit:contain}

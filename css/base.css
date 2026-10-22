@@ -7,7 +7,7 @@ background-color:var(--bg);background-attachment:scroll;
 background-image:radial-gradient(ellipse at 50% 0,#f9f1e5,#e9dac5 90%)}
 h1,h2,h3,.logo{font-family:'Playfair Display',Georgia,serif}
 button,input,select,textarea{font:inherit;color:inherit}
-a{color:var(--ac)}.mu{color:var(--mu);font-size:14px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+a{color:var(--ac)}.mu{color:var(--mu);font-size:14px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.auth-actions{margin-top:12px}
 
 /* header */
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--ln);position:sticky;top:env(safe-area-inset-top,0px);background:#f2e8da;z-index:5}

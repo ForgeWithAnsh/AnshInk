@@ -1,0 +1,11 @@
+/* Public sketch reviews page. */
+.review-page{max-width:1000px}
+.review-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.review-card{background:var(--card);border:1px solid var(--ln);border-radius:12px;overflow:hidden;animation:up .45s both}
+.review-card img{width:100%;height:220px;object-fit:cover;background:#efe3d0}
+.review-copy{padding:14px}
+.review-stars{color:#e0a100;font-size:20px}
+.review-card p{white-space:pre-wrap}
+.review-empty{text-align:center;padding:30px}
+.review-summary{margin:5px 0 22px;color:var(--mu)}
+@media(max-width:600px){.review-page{max-width:600px}}
