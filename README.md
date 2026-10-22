@@ -9,8 +9,8 @@ html/orders.html      my orders (list + details)
 html/account.html     my account
 html/admin.html       artist panel (admin only)
 css/                  base.css (shared) + one file per page
-js/                   config.js (edit text/prices/sketches), core.js, auth.js, layout.js, one file per page
-images/               sketch photos
+js/                   config.js (site settings/prices), core.js, auth.js, layout.js, one file per page
+images/               local source photos (gallery photos are stored in Firestore after upload)
 firestore.rules       paste into Firebase > Firestore > Rules
 ```
 
@@ -19,8 +19,8 @@ firestore.rules       paste into Firebase > Firestore > Rules
 The website's source changes are already in this local project folder. To publish them without selecting files one by one:
 
 1. Install/open GitHub Desktop and choose **File > Add Local Repository...**. Select this `AnshInk` folder. If GitHub Desktop says it cannot find a repository, choose **Create a Repository** only if this folder has no `.git` directory; this project already has one, so normally choose Add Local Repository.
-2. Review the changed files. Keep the deletions and the new `html/edit-details.html`, `html/reviews.html`, and `js/reviews.js` files included.
-3. Enter a summary such as `Improve mobile layout and order flows`, click **Commit to [current branch]**, then click **Push origin**.
+2. Review all changes and include the updated Firebase rules, gallery changes, new CSS file, page cleanup, and new pages from the previous updates.
+3. Enter a summary such as `Use Firestore for the sketch gallery`, click **Commit to [current branch]**, then click **Push origin**.
 4. On GitHub, open **Settings > Pages** and confirm the site is deployed from the repository's root on the branch you pushed (usually `main`). Wait for the Pages deployment to finish, then open the site URL shown there.
 5. After it deploys, check the home page on a phone-sized screen, sign-in, order submission, My Orders, account editing, and the reviews page.
 
@@ -38,32 +38,45 @@ Do not upload just a few files through GitHub's web interface: the update includ
 ### Firestore rules and notifications
 
 1. In Firebase Console, open **Firestore Database > Rules**.
-2. Replace the complete rules text with the complete contents of this repository's `firestore.rules`, then click **Publish**. Do not paste only a fragment.
+2. Replace the complete rules text with the complete contents of this repository's `firestore.rules`, then click **Publish**. Do not paste only a fragment. These rules allow anyone to view gallery items and only the verified admin account to add or remove them.
 3. No rule change is needed to remove phone login: Firebase Authentication providers are configured separately from Firestore rules.
 4. The website currently shows order progress in My Orders but does not deliver email or push notifications. The Trigger Email extension is not configured, so queued `mail` documents do not send messages by themselves.
 
 Without the Firebase extension, automated notifications need a separate trusted service (for example, a small server/serverless endpoint connected to an email provider). Browser push is also possible with FCM, but needs a service worker and a trusted sender. Manual email/WhatsApp is the zero-setup fallback. Never put SMTP or API secrets in this static website. No notification service is connected yet.
 
-## Payment links
+## Set up Razorpay payments
 
-The **Pay here** button opens the payment URL entered for that order in the artist panel. To use it, create a Razorpay account, complete its required account verification, create a Payment Link for the accepted total (sketch price plus delivery), and paste that link into the order's payment-link field before saving. The customer pays on Razorpay's hosted page. Check the payment in Razorpay, then manually mark the order as paid in the artist panel. Automatic payment confirmation needs a trusted server and a Razorpay webhook; never put secret API keys in this static website.
+The site uses Razorpay Payment Links. No Razorpay API key is needed in the website.
 
-Razorpay has a [Payment Links guide](https://razorpay.com/learn/payment-links-collect-payments-without-website/). Availability and onboarding requirements depend on your account.
+1. Sign in to your Razorpay Dashboard and finish any account/business verification it requests. Add and verify the bank account for settlements.
+2. Open **Payment Links > Create Payment Link**.
+3. Enter the total amount the customer owes: final sketch price plus delivery charge. Use a description such as `AnshInk sketch #0001`, and add the customer's name/email/phone if the dashboard offers those fields.
+4. Create the link and copy its hosted URL.
+5. In the website's Artist panel, open the matching order. Paste the URL into **Razorpay Payment Link** before pressing **Accept & ask for payment**. If you already accepted it, paste the link into the accepted order and choose **Save link**.
+6. The customer will see the **Pay** button in My Orders and pay on Razorpay's hosted checkout page.
+7. Check the transaction in Razorpay Dashboard. When it shows as paid, change the order status to **Payment received** in the Artist panel.
+
+The current site uses manual verification of each transaction. Automatic payment confirmation would need a trusted server and Razorpay webhook. Keep secret API keys out of this static website. See Razorpay's [Payment Links guide](https://razorpay.com/learn/payment-links-collect-payments-without-website/).
 
 Google Pay can accept UPI payments, but its [official website integration](https://developers.google.com/pay/india/api/web/intro) requires verified merchant/UPI details and payment-status handling. A personal GPay QR/UPI payment is possible as a manual transfer, but the artist would need to verify each payment manually and it does not securely confirm the matching order automatically. For this website's existing per-order hosted-link flow, Razorpay is the more practical fit; no payment provider has been connected yet.
 
-## Add a new sketch
-Put the photo in `images/` and add a line to the `SK` list in `js/config.js`.
+## Manage sketches and migrate the current gallery
 
-## Restore the six missing gallery photos
+The home page, All sketches page, and review page now use the Firestore `gallery` collection. Sketch images are no longer listed in `js/config.js`. Sign in with the verified Google account `forgewithansh@gmail.com`, open **All sketches**, choose **Add a sketch**, enter a title/category/description, and upload up to four photos. The first photo is the cover. Use **Remove** on a sketch card to take it off the site.
 
-These files in the original project were empty placeholders, so the real photos cannot be recovered from the repository history. If you still have the originals, copy them into `images/` using these exact names:
+To move the current homepage sketches into Firebase, do this once after publishing the code and Firestore rules:
 
-- `windswept-comparison.jpg`
-- `windswept-reference.jpg`
-- `softsmile-comparison.jpg`
-- `softsmile-reference.jpg`
-- `softsmile-sketch.jpg`
-- `thelook-comparison.jpg`
+1. Sign in as `forgewithansh@gmail.com` and go to **All sketches > Add a sketch**.
+2. Upload each sketch as a separate item. The local `images/` folder still has source photos to choose in the file picker.
+3. For existing reviews to stay attached, choose the matching item in **Link any existing reviews** when adding that old sketch:
 
-The old Windswept reference filename was misspelled as `windswept-refrence.jpg`; use the corrected spelling above. The current gallery configuration no longer points to these missing placeholders. Once you restore the photos, add their paths back to the appropriate sketch entries in `js/config.js` if you want them displayed.
+   | Sketch | Suggested photos from `images/` | Existing review link |
+   | --- | --- | --- |
+   | Jhumka Portrait | `jhumka-aesthetic.jpg`, `jhumka-comparison.jpg`, `jhumka-reference.jpg`, `jhumka-sketch.jpg` | Jhumka Portrait |
+   | Hidden Smile | `eyes-aesthetic.jpg`, `eyes-comparison.jpg`, `eyes-reference.jpg`, `eyes-sketch.jpg` | Hidden Smile |
+   | Wind-swept Hair | `windswept-aesthetic.jpg`, `windswept-sketch.jpg` | Wind-swept Hair |
+   | Soft Smile | `softsmile-aesthetic.png` | Soft Smile |
+   | The Look | `thelook-aesthetic.png`, `thelook-reference.png`, `thelook-sketch.jpg` | The Look |
+   | Om Sai Ram Portrait | `omsairam-aesthetic.png`, `omsairam-comparison.png`, `omsairam-reference.jpg`, `omsairam-sketch.jpg` | Om Sai Ram Portrait |
+
+4. Confirm each item appears on the home page and All sketches page. The existing local photo files are retained so you can upload them; after migration, they are not used by the public gallery code. The six photos that were empty placeholders in the old repository are unavailable, so only upload originals you actually have.

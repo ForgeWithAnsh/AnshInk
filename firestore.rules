@@ -26,6 +26,36 @@ service cloud.firestore {
       allow update: if signedIn() && request.resource.data.value == resource.data.value + 1;
     }
 
+    match /gallery/{sketchId} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'title', 'category', 'description', 'photos', 'legacyId', 'createdAt'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 60
+        && request.resource.data.category in ['human', 'other']
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 120
+        && request.resource.data.photos is list
+        && request.resource.data.photos.size() > 0
+        && request.resource.data.photos.size() <= 4
+        && request.resource.data.photos[0] is string
+        && request.resource.data.photos[0].size() <= 900000
+        && (request.resource.data.photos.size() < 2
+          || (request.resource.data.photos[1] is string && request.resource.data.photos[1].size() <= 900000))
+        && (request.resource.data.photos.size() < 3
+          || (request.resource.data.photos[2] is string && request.resource.data.photos[2].size() <= 900000))
+        && (request.resource.data.photos.size() < 4
+          || (request.resource.data.photos[3] is string && request.resource.data.photos[3].size() <= 900000))
+        && request.resource.data.createdAt is int
+        && (!('legacyId' in request.resource.data)
+          || request.resource.data.legacyId == null
+          || request.resource.data.legacyId in ['j', 'e', 'c', 'a', 'b', 'd']);
+      allow update, delete: if isAdmin();
+    }
+
     // Documents in this collection are consumed by Firebase's Trigger Email extension.
     // Customers can only queue one notification per own order, addressed to the artist.
     match /mail/{mailId} {
