@@ -1,6 +1,7 @@
 /* Reviews page: responsive review cards and owner/admin review actions. */
 (function () {
-  const main = $('#main');
+  const summary = $('#reviews');
+  const grid = $('#review-grid');
   let reviews = [];
   let sketchesById = new Map();
 
@@ -31,23 +32,19 @@
 
   function render() {
     if (!reviews.length) {
-      main.innerHTML = `
-        <div class="reviews-heading"><h1>Reviews</h1></div>
-        <p class="mu reviews-empty">No reviews yet. Be the first to share your experience.</p>
-      `;
+      summary.textContent = 'No reviews yet.';
+      grid.innerHTML = '<p class="mu reviews-empty">Be the first to share your experience.</p>';
       return;
     }
 
-    main.innerHTML = `
-      <div class="reviews-heading"><h1>Reviews</h1></div>
-      <section class="review-grid" aria-label="Customer reviews">
-        ${reviews.map(review => {
+    summary.textContent = `${reviews.length} customer ${reviews.length === 1 ? 'review' : 'reviews'}`;
+    grid.innerHTML = reviews.map(review => {
           const sketch = reviewSketch(review);
           const photo = sketch?.photo ? `
             <img class="review-sketch-photo" src="${photoUrl(sketch.photo)}" alt="${esc(sketch.title)}" loading="lazy">
           ` : '';
 
-          return `
+      return `
             <article class="review-card">
               ${photo}
               <div class="review-card-body">
@@ -63,19 +60,16 @@
                 ${actions(review)}
               </div>
             </article>
-          `;
-        }).join('')}
-      </section>
-    `;
+      `;
+    }).join('');
   }
 
   async function load() {
-    main.innerHTML = '<p class="mu">Loading reviews…</p>';
+    summary.textContent = 'Loading reviews…';
+    grid.innerHTML = '';
     const slowLoadTimer = setTimeout(() => {
-      main.innerHTML = `
-        <p class="mu reviews-empty">Reviews are taking longer than expected.</p>
-        <div class="reviews-retry"><button class="btn" onclick="reloadReviews()">Try again</button></div>
-      `;
+      summary.textContent = 'Reviews are taking longer than expected.';
+      grid.innerHTML = '<div class="reviews-retry"><button class="btn" onclick="reloadReviews()">Try again</button></div>';
     }, 12000);
 
     try {
@@ -104,10 +98,8 @@
       render();
     } catch (error) {
       console.error('Could not load reviews:', error);
-      main.innerHTML = `
-        <p class="mu reviews-empty">Could not load reviews. Check your connection or Firebase access, then try again.</p>
-        <div class="reviews-retry"><button class="btn" onclick="reloadReviews()">Try again</button></div>
-      `;
+      summary.textContent = 'Could not load reviews. Check your connection or Firebase access, then try again.';
+      grid.innerHTML = '<div class="reviews-retry"><button class="btn" onclick="reloadReviews()">Try again</button></div>';
     } finally {
       clearTimeout(slowLoadTimer);
     }
