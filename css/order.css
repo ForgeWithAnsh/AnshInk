@@ -5,4 +5,8 @@
 .tot{font-size:26px;font-weight:bold}
 .pre{width:100%;max-height:200px;object-fit:contain;margin-top:6px;border-radius:8px;background:#efe3d0}
 .order-actions{margin-top:12px}.order-actions:first-of-type{margin-top:10px}
+#ordpage input[type="file"]{display:block;width:100%;max-width:100%;padding:8px;border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+#ordpage input[type="file"]::file-selector-button{margin-right:12px;padding:10px 16px;border:0;border-radius:8px;background:var(--ac);color:#fbf3e6;font-family:inherit;font-size:14px;font-weight:600;line-height:1.2;cursor:pointer;transition:background .18s ease,transform .18s ease}
+#ordpage input[type="file"]::file-selector-button:hover{background:var(--ac2,var(--ac));transform:translateY(-1px)}
+#ordpage input[type="file"]:focus-visible{outline:3px solid color-mix(in srgb,var(--ac) 35%,transparent);outline-offset:2px}
 @media(max-width:600px){.opt{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.opt button{padding:9px 6px;font-size:15px}.tot{text-align:center}.page #ordpage>.box{width:100%}}
