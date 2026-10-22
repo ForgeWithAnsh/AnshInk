@@ -14,10 +14,15 @@ onUser(async user => {
   }
 
   if (!isAdm()) {
+    const signedInEmail = (user.email || '').trim().toLowerCase();
+    const intendedArtist = CFG.adminEmail.toLowerCase();
+    const accessHelp = signedInEmail === intendedArtist && !user.emailVerified
+      ? `Firebase reports that ${esc(CFG.adminEmail)} is not verified. Sign in with that account through Google, or verify its email address, then reload.`
+      : `Artist access requires the verified Google account ${esc(CFG.adminEmail)}. The currently signed-in account does not match.`;
     main.innerHTML = `
       <div class="box">
         <h2>Artist panel</h2>
-        <p class="mu">Artist access only. Sign in with the verified Google account ${esc(CFG.adminEmail)}.</p>
+        <p class="mu">${accessHelp}</p>
         <button class="btn o" onclick="auth.signOut()">Log out and switch account</button>
       </div>
     `;

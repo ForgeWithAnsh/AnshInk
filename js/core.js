@@ -123,7 +123,8 @@ auth.onAuthStateChanged(async user => {
       address: profile.address || profile.addr || '',
       pincode: profile.pincode || profile.pin || '',
       done: Boolean(profile.done),
-      adm: user.email === CFG.adminEmail && user.emailVerified,
+      adm: (user.email || '').trim().toLowerCase() === CFG.adminEmail.toLowerCase()
+        && user.emailVerified,
       providerId: provider.providerId || ''
     };
   }

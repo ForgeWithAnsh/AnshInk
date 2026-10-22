@@ -1,5 +1,6 @@
 /* Sketch catalogue and artist-only sketch management. */
 const CATS = {
+  home: 'Homepage picks',
   human: 'Human sketches',
   other: 'Other sketches'
 };
@@ -8,6 +9,23 @@ const box = $('#list');
 let items = [];
 let tab = 'human';
 let isLoading = true;
+
+function compareByOrder(first, second, field) {
+  const firstOrder = Number.isFinite(first[field]) ? first[field] : null;
+  const secondOrder = Number.isFinite(second[field]) ? second[field] : null;
+  if (firstOrder !== null && secondOrder !== null) return firstOrder - secondOrder;
+  if (firstOrder !== null) return -1;
+  if (secondOrder !== null) return 1;
+  return (second.createdAt || 0) - (first.createdAt || 0);
+}
+
+function visibleSketches() {
+  const selected = tab === 'home'
+    ? items.filter(item => item.featured)
+    : items.filter(item => item.category === tab);
+  const orderField = tab === 'home' ? 'homeOrder' : 'displayOrder';
+  return selected.slice().sort((first, second) => compareByOrder(first, second, orderField));
+}
 
 box.innerHTML = '<div class="shead"><h1>All sketches</h1></div><p class="mu">Loading sketches…</p>';
 
@@ -47,13 +65,17 @@ function render() {
     box.innerHTML = '<div class="shead"><h1>All sketches</h1></div><p class="mu">Loading sketches…</p>';
     return;
   }
-  const count = category => items.filter(item => item.category === category).length;
-  const visibleItems = items.filter(item => item.category === tab);
+  const tabs = isAdm() ? CATS : { human: CATS.human, other: CATS.other };
+  if (!(tab in tabs)) tab = 'human';
+  const count = category => category === 'home'
+    ? items.filter(item => item.featured).length
+    : items.filter(item => item.category === category).length;
+  const visibleItems = visibleSketches();
 
   box.innerHTML = `
     <div class="shead"><h1>All sketches</h1></div>
     <div class="tabs2">
-      ${Object.entries(CATS).map(([key, label]) => `
+      ${Object.entries(tabs).map(([key, label]) => `
         <button class="tab2 ${tab === key ? 'on' : ''}" onclick="tab='${key}';render()">
           ${label} <span>${count(key)}</span>
         </button>
@@ -65,6 +87,14 @@ function render() {
         ${visibleItems.map(item => `
           <article class="scard" onclick="openS('${item.id}')">
             <img src="${photoUrl(item.photos[0])}" alt="${esc(item.title)}" loading="lazy">
+            ${isAdm() ? `
+              <div class="sketch-reorder" onclick="event.stopPropagation()">
+                <button type="button" aria-label="Move up" title="Move up"
+                  onclick="moveSketch('${item.id}',-1)">↑</button>
+                <button type="button" aria-label="Move down" title="Move down"
+                  onclick="moveSketch('${item.id}',1)">↓</button>
+              </div>
+            ` : ''}
             ${isAdm() ? `
               <button class="x" onclick="event.stopPropagation();delS('${item.id}')">Remove</button>
               <button class="feature-toggle ${item.featured ? 'is-featured' : ''}"
@@ -82,6 +112,35 @@ function render() {
 
 onUser(() => render());
 load();
+
+async function moveSketch(id, direction) {
+  if (!isAdm()) return;
+
+  const ordered = visibleSketches();
+  const index = ordered.findIndex(item => item.id === id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= ordered.length) return;
+
+  const [moved] = ordered.splice(index, 1);
+  ordered.splice(nextIndex, 0, moved);
+  const orderField = tab === 'home' ? 'homeOrder' : 'displayOrder';
+
+  try {
+    const batch = db.batch();
+    ordered.forEach((item, position) => {
+      batch.update(db.collection('gallery').doc(item.id), { [orderField]: position });
+    });
+    await batch.commit();
+    items.forEach(item => {
+      const position = ordered.findIndex(orderedItem => orderedItem.id === item.id);
+      if (position >= 0) item[orderField] = position;
+    });
+    render();
+  } catch (error) {
+    console.error('Could not reorder sketches:', error);
+    toast('Could not save the new order. Confirm the latest Firestore rules are published.');
+  }
+}
 
 function openS(id) {
   const item = items.find(sketch => sketch.id === id);
@@ -187,6 +246,12 @@ async function saveS() {
       description: $('#sd').value.trim(),
       photos: O.np,
       featured: $('#sf-home').checked,
+      displayOrder: items.filter(item => item.category === $('#sc').value)
+        .reduce((highest, item) => Math.max(highest, Number.isFinite(item.displayOrder) ? item.displayOrder : -1), -1) + 1,
+      ...( $('#sf-home').checked ? {
+        homeOrder: items.filter(item => item.featured)
+          .reduce((highest, item) => Math.max(highest, Number.isFinite(item.homeOrder) ? item.homeOrder : -1), -1) + 1
+      } : {}),
       legacyId: $('#sl').value || null,
       createdAt: TS()
     });

@@ -109,12 +109,22 @@ async function loadGallery() {
       return {
         id: doc.id,
         featured: data.featured === true,
+        homeOrder: data.homeOrder,
+        createdAt: data.createdAt || 0,
         legacyId: data.legacyId || legacySketchIdForTitle(data.title),
         title: data.title || 'Sketch',
         description: data.description || '',
         photos: (data.photos || [data.photo]).filter(Boolean)
       };
-    }).filter(sketch => sketch.photos.length > 0 && sketch.featured);
+    }).filter(sketch => sketch.photos.length > 0 && sketch.featured)
+      .sort((first, second) => {
+        const firstOrder = Number.isFinite(first.homeOrder) ? first.homeOrder : null;
+        const secondOrder = Number.isFinite(second.homeOrder) ? second.homeOrder : null;
+        if (firstOrder !== null && secondOrder !== null) return firstOrder - secondOrder;
+        if (firstOrder !== null) return -1;
+        if (secondOrder !== null) return 1;
+        return second.createdAt - first.createdAt;
+      });
 
     if (!sketches.length) {
       grid.innerHTML = '<p class="mu gallery-empty">Selected sketches will appear here soon.</p>';
