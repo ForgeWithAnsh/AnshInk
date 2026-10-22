@@ -5,8 +5,12 @@
 .tot{font-size:26px;font-weight:bold}
 .pre{width:100%;max-height:200px;object-fit:contain;margin-top:6px;border-radius:8px;background:#efe3d0}
 .order-actions{margin-top:12px}.order-actions:first-of-type{margin-top:10px}
-#ordpage input[type="file"]{display:block;width:100%;max-width:100%;padding:8px;border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
-#ordpage input[type="file"]::file-selector-button{margin-right:12px;padding:10px 16px;border:0;border-radius:8px;background:var(--ac);color:#fbf3e6;font-family:inherit;font-size:14px;font-weight:600;line-height:1.2;cursor:pointer;transition:background .18s ease,transform .18s ease}
-#ordpage input[type="file"]::file-selector-button:hover{background:var(--ac2,var(--ac));transform:translateY(-1px)}
-#ordpage input[type="file"]:focus-visible{outline:3px solid color-mix(in srgb,var(--ac) 35%,transparent);outline-offset:2px}
+#ordpage .photo-upload{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:76px;margin:8px 0 16px;padding:14px 16px;border:1px dashed var(--ac);border-radius:14px;background:var(--card);cursor:pointer;transition:border-color .18s ease,background .18s ease,transform .18s ease}
+#ordpage .photo-upload:hover{border-style:solid;background:color-mix(in srgb,var(--ac) 7%,var(--card));transform:translateY(-1px)}
+#ordpage .photo-upload-icon{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:11px;background:var(--ac);color:#fbf3e6;font-size:25px;line-height:1}
+#ordpage .photo-upload-copy{display:grid;gap:3px}
+#ordpage .photo-upload-copy strong{color:var(--tx);font-size:15px}
+#ordpage .photo-upload-copy small{color:var(--mu);font-size:12px}
+#ordpage .photo-upload-input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+#ordpage .photo-upload:focus-within{outline:3px solid color-mix(in srgb,var(--ac) 35%,transparent);outline-offset:2px}
 @media(max-width:600px){.opt{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.opt button{padding:9px 6px;font-size:15px}.tot{text-align:center}.page #ordpage>.box{width:100%}}
