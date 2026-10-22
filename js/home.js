@@ -108,15 +108,16 @@ async function loadGallery() {
       const data = doc.data();
       return {
         id: doc.id,
+        featured: data.featured === true,
         legacyId: data.legacyId || legacySketchIdForTitle(data.title),
         title: data.title || 'Sketch',
         description: data.description || '',
         photos: (data.photos || [data.photo]).filter(Boolean)
       };
-    }).filter(sketch => sketch.photos.length > 0);
+    }).filter(sketch => sketch.photos.length > 0 && sketch.featured);
 
     if (!sketches.length) {
-      grid.innerHTML = '<p class="mu gallery-empty">Sketches will appear here soon.</p>';
+      grid.innerHTML = '<p class="mu gallery-empty">Selected sketches will appear here soon.</p>';
       return;
     }
 

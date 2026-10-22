@@ -28,6 +28,7 @@ async function load() {
         ...data,
         id: doc.id,
         legacyId: data.legacyId || legacySketchIdForTitle(data.title),
+        featured: data.featured === true,
         photos: (data.photos || [data.photo]).filter(Boolean),
         builtIn: false
       };
@@ -64,7 +65,13 @@ function render() {
         ${visibleItems.map(item => `
           <article class="scard" onclick="openS('${item.id}')">
             <img src="${photoUrl(item.photos[0])}" alt="${esc(item.title)}" loading="lazy">
-            ${isAdm() ? `<button class="x" onclick="event.stopPropagation();delS('${item.id}')">Remove</button>` : ''}
+            ${isAdm() ? `
+              <button class="x" onclick="event.stopPropagation();delS('${item.id}')">Remove</button>
+              <button class="feature-toggle ${item.featured ? 'is-featured' : ''}"
+                onclick="event.stopPropagation();toggleFeatured('${item.id}',${!item.featured})">
+                ${item.featured ? '★ On home' : '☆ Feature on home'}
+              </button>
+            ` : ''}
             <div class="t">${esc(item.title)}</div>
           </article>
         `).join('')}
@@ -124,6 +131,7 @@ function addForm() {
     </select>
     <label for="sd">Short description (optional)</label>
     <input id="sd" maxlength="120" placeholder="e.g. Charcoal pencil on paper">
+    <label class="feature-choice"><input id="sf-home" type="checkbox"> Show this sketch on the home page</label>
     <label for="sl">Link any existing reviews (optional)</label>
     <select id="sl">
       <option value="">This is a new sketch</option>
@@ -178,6 +186,7 @@ async function saveS() {
       category: $('#sc').value,
       description: $('#sd').value.trim(),
       photos: O.np,
+      featured: $('#sf-home').checked,
       legacyId: $('#sl').value || null,
       createdAt: TS()
     });
@@ -188,6 +197,21 @@ async function saveS() {
     console.error('Could not save sketch:', error);
     button.disabled = false;
     toast('Could not save. Check the photo size and publish the gallery rules in firestore.rules.', 6500);
+  }
+}
+
+async function toggleFeatured(id, featured) {
+  if (!isAdm()) return;
+
+  try {
+    await db.collection('gallery').doc(id).update({ featured });
+    const item = items.find(sketch => sketch.id === id);
+    if (item) item.featured = featured;
+    render();
+    toast(featured ? 'Added to the home page' : 'Removed from the home page');
+  } catch (error) {
+    console.error('Could not update home page selection:', error);
+    toast('Could not update this sketch');
   }
 }
 
