@@ -34,7 +34,7 @@
 
   .sgrid {
     width: 100%;
-    grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(10px, 2vw, 16px);
   }
 
