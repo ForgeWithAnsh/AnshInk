@@ -204,6 +204,7 @@ async function loadReviews() {
 
     snapshot.forEach(document => {
       const review = document.data();
+      review.id = document.id;
       (reviewsBySketch[review.sk] ||= []).push(review);
     });
 
@@ -233,6 +234,7 @@ function openRev(id) {
           <b>${esc(review.n)}</b>
           <span class="st">${stars(review.s)}</span>
           <div>${esc(review.x)}</div>
+          ${reviewActions(review, id)}
         </div>
       `).join('') : '<p class="mu">Be the first to review.</p>'}
     </div>
@@ -249,6 +251,72 @@ function openRev(id) {
   `);
 
   setR(5);
+}
+
+function reviewActions(review, sketchId) {
+  const ownReview = me && review.uid === me.id;
+  if (!ownReview && !isAdm()) return '';
+
+  const canEdit = ownReview && Date.now() - review.t <= 15 * 60 * 1000;
+  return `
+    <div class="row review-actions">
+      ${canEdit ? `<button class="btn o sm" onclick="editHomeReview('${review.id}','${sketchId}')">Edit</button>` : ''}
+      <button class="btn o sm" onclick="deleteHomeReview('${review.id}','${sketchId}')">Delete</button>
+    </div>
+  `;
+}
+
+function editHomeReview(reviewId, sketchId) {
+  const review = Object.values(reviewsBySketch).flat().find(item => item.id === reviewId);
+  if (!review || !me || review.uid !== me.id || Date.now() - review.t > 15 * 60 * 1000) {
+    return toast('Reviews can only be edited by their author for 15 minutes after posting');
+  }
+
+  show(`
+    <h2>Edit your review</h2>
+    <label for="edit-review-rating">Rating</label>
+    <select id="edit-review-rating">
+      ${[5, 4, 3, 2, 1].map(value => `<option value="${value}" ${review.s === value ? 'selected' : ''}>${value} star${value === 1 ? '' : 's'}</option>`).join('')}
+    </select>
+    <label for="edit-review-text">Review</label>
+    <textarea id="edit-review-text" rows="4" maxlength="500">${esc(review.x)}</textarea>
+    <div class="row review-actions">
+      <button class="btn" onclick="saveHomeReview('${reviewId}','${sketchId}')">Save changes</button>
+      <button class="btn o" onclick="openRev('${sketchId}')">Cancel</button>
+    </div>
+  `);
+}
+
+async function saveHomeReview(reviewId, sketchId) {
+  const text = $('#edit-review-text').value.trim();
+  if (!text) return toast('Write a few words first');
+
+  try {
+    await db.collection('reviews').doc(reviewId).update({
+      s: Number($('#edit-review-rating').value),
+      x: text
+    });
+    await loadReviews();
+    openRev(sketchId);
+    toast('Review updated');
+  } catch (error) {
+    console.error('Could not update review:', error);
+    toast('Could not update review. The 15-minute edit window may have ended.');
+  }
+}
+
+async function deleteHomeReview(reviewId, sketchId) {
+  if (!confirm('Delete this review?')) return;
+
+  try {
+    await db.collection('reviews').doc(reviewId).delete();
+    await loadReviews();
+    openRev(sketchId);
+    toast('Review deleted');
+  } catch (error) {
+    console.error('Could not delete review:', error);
+    toast('Could not delete review');
+  }
 }
 
 function setR(value) {
