@@ -11,6 +11,7 @@
 .scard:hover{transform:translateY(-4px);box-shadow:0 10px 22px #5c3f2b40}
 .scard img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:#efe3d0}
 .scard .t{padding:8px 10px;font-weight:bold;font-size:15px}
+.sketch-card-rating{padding:0 10px 6px;font-size:13px;min-height:22px}.sketch-review-button{margin:0 10px 10px}.sketch-detail-rating{margin:8px 0}.sketch-reviews-list{max-height:40vh;overflow:auto}.sketch-review{border-top:1px solid var(--ln);padding:10px 0}.sketch-review p{margin:6px 0}
 .scard .x{position:absolute;top:6px;right:6px;background:#a33;color:#fff;border:0;border-radius:14px;padding:3px 9px;font-size:12px;cursor:pointer}
 .scard .feature-toggle{position:absolute;top:6px;left:6px;background:#fffaf1;color:var(--ac);border:1px solid var(--ln);border-radius:14px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px #0002}
 .scard .feature-toggle.is-featured{background:var(--ac);color:#fffaf1}
