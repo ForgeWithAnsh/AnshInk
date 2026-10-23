@@ -9,6 +9,36 @@ const box = $('#list');
 let items = [];
 let tab = 'human';
 let isLoading = true;
+let sketchReviews = {};
+
+function reviewsForSketch(item) {
+  return [
+    ...(sketchReviews[item.id] || []),
+    ...(item.legacyId ? sketchReviews[item.legacyId] || [] : [])
+  ];
+}
+
+function sketchRatingSummary(item) {
+  const reviews = reviewsForSketch(item);
+  if (!reviews.length) return '<span class="mu">No ratings yet</span>';
+  const average = reviews.reduce((sum, review) => sum + Number(review.s || 0), 0) / reviews.length;
+  return `<span class="st">${stars(average)}</span> <span class="mu">${average.toFixed(1)} · ${reviews.length} review${reviews.length === 1 ? '' : 's'}</span>`;
+}
+
+async function loadSketchReviews() {
+  try {
+    const snapshot = await db.collection('reviews').get();
+    sketchReviews = {};
+    snapshot.forEach(document => {
+      const review = { ...document.data(), id: document.id };
+      (sketchReviews[review.sk] ||= []).push(review);
+    });
+    Object.values(sketchReviews).forEach(reviews => reviews.sort((a, b) => a.t - b.t));
+    if (!isLoading) render();
+  } catch (error) {
+    console.error('Could not load sketch reviews:', error);
+  }
+}
 
 function compareByOrder(first, second, field) {
   const firstOrder = Number.isFinite(first[field]) ? first[field] : null;
@@ -103,6 +133,8 @@ function render() {
               </button>
             ` : ''}
             <div class="t">${esc(item.title)}</div>
+            <div class="sketch-card-rating">${sketchRatingSummary(item)}</div>
+            <button class="btn o sm sketch-review-button" onclick="event.stopPropagation();openSketchReviews('${item.id}')">Reviews &amp; rate</button>
           </article>
         `).join('')}
       </div>
@@ -112,6 +144,7 @@ function render() {
 
 onUser(() => render());
 load();
+loadSketchReviews();
 
 async function moveSketch(id, direction) {
   if (!isAdm()) return;
@@ -157,11 +190,117 @@ function openS(id) {
       </div>
     ` : ''}
     <p class="mu">${esc(item.description || '')}</p>
+    <div class="sketch-detail-rating">${sketchRatingSummary(item)}</div>
     <div class="row">
       <a class="btn cta" href="${PG('order')}">Order like this</a>
+      <button class="btn o" onclick="openSketchReviews('${item.id}')">Reviews &amp; rate</button>
       <button class="btn o" onclick="hide()">Close</button>
     </div>
   `);
+}
+
+function openSketchReviews(id) {
+  const item = items.find(sketch => sketch.id === id);
+  if (!item) return;
+  const reviews = reviewsForSketch(item);
+  O.sketchReviewRating = 5;
+
+  show(`
+    <h2>${esc(item.title)} · Reviews</h2>
+    <div class="sketch-detail-rating">${sketchRatingSummary(item)}</div>
+    <div class="sketch-reviews-list">
+      ${reviews.length ? reviews.slice().reverse().map(review => `
+        <article class="sketch-review">
+          <b>${esc(review.n || 'Customer')}</b>
+          <div class="st">${stars(review.s)}</div>
+          <p>${esc(review.x || '')}</p>
+          ${sketchReviewActions(review, id)}
+        </article>
+      `).join('') : '<p class="mu">Be the first to review this sketch.</p>'}
+    </div>
+    <label>Your rating</label>
+    <div class="st rating-input" id="sketch-rs">
+      ${[1, 2, 3, 4, 5].map(value => `<span onclick="setSketchReviewRating(${value})">★</span>`).join('')}
+    </div>
+    <label for="sketch-rx">Your review</label>
+    <textarea id="sketch-rx" rows="3" maxlength="500" placeholder="Share what you think about this sketch"></textarea>
+    <div class="row review-actions">
+      <button class="btn" onclick="postSketchReview('${id}')">Post review</button>
+      <button class="btn o" onclick="openS('${id}')">Back to sketch</button>
+    </div>
+  `);
+  setSketchReviewRating(5);
+}
+
+function sketchReviewActions(review, sketchId) {
+  const isOwner = me && review.uid === me.id;
+  if (!isOwner && !isAdm()) return '';
+  const canEdit = isOwner && Date.now() - review.t <= 15 * 60 * 1000;
+  return `<div class="row review-actions">
+    ${canEdit ? `<button class="btn o sm" onclick="editSketchReview('${review.id}','${sketchId}')">Edit</button>` : ''}
+    <button class="btn o sm" onclick="deleteSketchReview('${review.id}','${sketchId}')">Delete</button>
+  </div>`;
+}
+
+function setSketchReviewRating(value) {
+  O.sketchReviewRating = value;
+  const picker = $('#sketch-rs');
+  if (picker) [...picker.children].forEach((star, index) => { star.style.opacity = index < value ? 1 : 0.25; });
+}
+
+async function postSketchReview(id) {
+  if (!me) return login(() => openSketchReviews(id));
+  const reviewText = $('#sketch-rx').value.trim();
+  if (!reviewText) return toast('Write a few words first');
+  try {
+    await db.collection('reviews').add({ sk: id, uid: me.id, n: me.name || 'Customer', s: O.sketchReviewRating || 5, x: reviewText, t: TS() });
+    await loadSketchReviews();
+    openSketchReviews(id);
+    toast('Thanks for your review!');
+  } catch (error) {
+    console.error('Could not post review:', error);
+    toast('Could not post review. Please sign in and try again.');
+  }
+}
+
+function editSketchReview(reviewId, sketchId) {
+  const review = Object.values(sketchReviews).flat().find(item => item.id === reviewId);
+  if (!review || !me || review.uid !== me.id || Date.now() - review.t > 15 * 60 * 1000) {
+    return toast('Reviews can only be edited by their author for 15 minutes after posting');
+  }
+  show(`<h2>Edit your review</h2>
+    <label for="edit-sketch-rating">Rating</label>
+    <select id="edit-sketch-rating">${[5, 4, 3, 2, 1].map(value => `<option value="${value}" ${review.s === value ? 'selected' : ''}>${value} star${value === 1 ? '' : 's'}</option>`).join('')}</select>
+    <label for="edit-sketch-text">Review</label>
+    <textarea id="edit-sketch-text" rows="4" maxlength="500">${esc(review.x)}</textarea>
+    <div class="row review-actions"><button class="btn" onclick="saveSketchReview('${reviewId}','${sketchId}')">Save changes</button><button class="btn o" onclick="openSketchReviews('${sketchId}')">Cancel</button></div>`);
+}
+
+async function saveSketchReview(reviewId, sketchId) {
+  const text = $('#edit-sketch-text').value.trim();
+  if (!text) return toast('Write a few words first');
+  try {
+    await db.collection('reviews').doc(reviewId).update({ s: Number($('#edit-sketch-rating').value), x: text });
+    await loadSketchReviews();
+    openSketchReviews(sketchId);
+    toast('Review updated');
+  } catch (error) {
+    console.error('Could not update review:', error);
+    toast('Could not update review. The 15-minute edit window may have ended.');
+  }
+}
+
+async function deleteSketchReview(reviewId, sketchId) {
+  if (!confirm('Delete this review?')) return;
+  try {
+    await db.collection('reviews').doc(reviewId).delete();
+    await loadSketchReviews();
+    openSketchReviews(sketchId);
+    toast('Review deleted');
+  } catch (error) {
+    console.error('Could not delete review:', error);
+    toast('Could not delete review');
+  }
 }
 
 function selectSketchPhoto(thumbnail) {

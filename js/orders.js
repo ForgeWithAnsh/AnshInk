@@ -71,12 +71,12 @@ function view(id) {
     : `Sketch ${rs(order.fin)} + delivery ${rs(order.del || 0)} = <b>${rs(tot(order))}</b>`;
   const deliveryNotes = order.note ? `<br>Notes: ${esc(order.note)}` : '';
   const paymentNotice = order.st === 1
-    ? order.link
-      ? `
-        <p class="mu">Please pay by ${paymentDueDate}, or the order is cancelled automatically.</p>
-        <button class="btn" onclick="payNow('${order.id}')">Pay ${rs(tot(order))}</button>
-      `
-      : `<p class="mu">Accepted. Your payment link is being prepared; it will appear here soon. Pay by ${paymentDueDate}.</p>`
+    ? `
+      <p class="mu">Please pay by ${paymentDueDate}, or the order is cancelled automatically.</p>
+      ${order.link
+        ? `<button class="btn" onclick="payNow('${order.id}')">Pay ${rs(tot(order))}</button>`
+        : '<p class="mu">Your order is accepted. The payment link will appear here shortly.</p>'}
+    `
     : '';
   const cancelButton = order.st === 0
     ? `<button class="btn o sm" onclick="cancelOrder('${order.id}')">Cancel order</button>`
@@ -124,9 +124,8 @@ function view(id) {
 function payNow(id) {
   const order = O.list.find(item => item.id === id);
   if (!order?.link) return;
-
-  window.open(order.link, '_blank', 'noopener');
-  toast('Once your payment is confirmed, your order moves forward');
+  window.open(order.link, '_blank', 'noopener,noreferrer');
+  toast(`Pay for Sketch #${id} on Razorpay.`, 5000);
 }
 
 async function cancelOrder(id) {

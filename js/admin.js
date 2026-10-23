@@ -115,8 +115,8 @@ function renderNewOrderActions(order) {
     <input id="f${order.id}" inputmode="numeric" value="${order.amt}">
     <label for="d${order.id}">Delivery charge ₹</label>
     <input id="d${order.id}" inputmode="numeric" value="0">
-    <label for="l${order.id}">Razorpay Payment Link (optional)</label>
-    <input id="l${order.id}" type="url" placeholder="https://rzp.io/…">
+    <label for="l${order.id}">Razorpay Payment Link</label>
+    <input id="l${order.id}" type="url" placeholder="https://rzp.io/i/...">
     <div class="row admin-actions">
       <button class="btn sm" onclick="accept('${order.id}')">Accept &amp; ask for payment</button>
       <button class="btn o sm" onclick="decline('${order.id}')">Decline</button>
@@ -136,8 +136,8 @@ function renderActiveOrderActions(order) {
     </select>
     ${order.st === 1 ? `
       <label for="l${order.id}">Razorpay Payment Link</label>
-      <input id="l${order.id}" type="url" value="${esc(order.link || '')}" placeholder="https://rzp.io/…">
-      <button class="btn o sm save-payment-link" onclick="savePaymentLink('${order.id}')">Save payment link</button>
+      <input id="l${order.id}" type="url" value="${esc(order.link || '')}" placeholder="https://rzp.io/i/...">
+      <button class="btn sm" onclick="savePaymentLink('${order.id}')">Save link</button>
     ` : ''}
     ${order.rf === 'req' ? `
       <p><b>Refund requested</b></p>
@@ -191,24 +191,24 @@ function accept(id) {
   const value = field => $(`#${field}${id}`).value.trim();
   const finalPrice = Number(value('f'));
   const deliveryCharge = Number(value('d')) || 0;
-  const paymentLink = value('l');
+  const link = value('l');
 
   if (!finalPrice) return toast('Enter the final price');
-  if (paymentLink && !/^https:\/\//i.test(paymentLink)) return toast('Enter the full HTTPS Razorpay link');
+  if (link && !/^https:\/\//i.test(link)) return toast('Enter a valid HTTPS payment link');
 
   adu(id, {
     finalPrice,
     deliveryCharge,
-    link: paymentLink,
+    link,
     st: 1,
     acc: TS()
   });
 }
 
 function savePaymentLink(id) {
-  const paymentLink = $(`#l${id}`).value.trim();
-  if (paymentLink && !/^https:\/\//i.test(paymentLink)) return toast('Enter the full HTTPS Razorpay link');
-  adu(id, { link: paymentLink });
+  const link = $(`#l${id}`).value.trim();
+  if (!/^https:\/\//i.test(link)) return toast('Enter a valid HTTPS payment link');
+  adu(id, { link });
 }
 
 function decline(id) {
