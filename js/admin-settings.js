@@ -332,7 +332,8 @@ async function saveShopProduct(id) {
     await ref.set(data, { merge: true });
     await loadAdminShopItems();
     hide();
-    renderShopAdmin();
+    if ($('#admin-section')) renderShopAdmin();
+    else if ($('#shop-list')) await loadShop();
     toast('InkShop card saved');
   } catch (error) {
     console.error('Could not save InkShop product:', error);
@@ -345,7 +346,8 @@ async function deleteShopProduct(id) {
   try {
     await db.collection('shopProducts').doc(id).delete();
     adminShopItems = adminShopItems.filter(item => item.id !== id);
-    renderShopAdmin();
+    if ($('#admin-section')) renderShopAdmin();
+    else if ($('#shop-list')) await loadShop();
     toast('InkShop card deleted');
   } catch (error) {
     console.error('Could not delete InkShop product:', error);

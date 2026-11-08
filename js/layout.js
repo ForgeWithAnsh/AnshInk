@@ -40,7 +40,7 @@ async function renderSharedLayout() {
     <header>
       <div class="brand-group">
         <a class="logo" href="${PG('index')}">✏ ${esc(SITE.siteName)}</a>
-        <a class="btn sm shop-nav" href="${PG('shop')}">InkShop</a>
+        <a class="btn sm shop-nav" href="${PG('shop')}"><svg class="shop-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h14l-1 10H4L3 7Z"/><path d="M7 7V5a3 3 0 0 1 6 0v2"/></svg><span>InkShop</span></a>
       </div>
       <nav>
         <a href="${PG('index')}">${esc(SITE.navHome || 'Home')}</a>

@@ -32,14 +32,13 @@ function chooseQuote() {
 }
 
 function renderHomeContent() {
-  $('#sq').textContent = `“${chooseQuote()}”`;
-  $('#hi').src = /^(data:|https?:\/\/)/.test(SITE.hero || '') ? SITE.hero : BASE + SITE.hero;
+  renderSplashQuote(true);
+  setHeroImage();
   $('#hn').textContent = SITE.artist;
   $('#hb').textContent = SITE.bio;
   $('#hero-order-cta').textContent = SITE.heroCta || 'Order one for yourself';
   $('#gal').textContent = SITE.galleryHeading || 'My sketches';
   $('#all-sketches-cta').textContent = SITE.allSketchesCta || 'All sketches';
-  $('#sq').textContent = `“${chooseQuote()}”`;
   $('#abt').textContent = SITE.aboutHeading || 'About me';
 
   const today = new Date();
@@ -64,6 +63,48 @@ function renderHomeContent() {
   `;
 }
 
+let splashQuoteSource = '';
+
+function renderSplashQuote(restartAnimation = false) {
+  const quoteSource = JSON.stringify(SITE.quotes?.length ? SITE.quotes : CFG.quotes);
+  if (splashQuoteSource === quoteSource && $('#sq').textContent) return;
+  splashQuoteSource = quoteSource;
+  const quote = `“${chooseQuote()}”`;
+  const element = $('#sq');
+  if (element.textContent === quote) return;
+  element.textContent = quote;
+  if (restartAnimation) {
+    element.style.animation = 'none';
+    void element.offsetWidth;
+    element.style.animation = '';
+  }
+}
+
+function heroImageUrl(path) {
+  if (/^(data:|https?:\/\/)/.test(path || '')) return path;
+  const relativePath = String(path || 'images/eyes.jpg').split('?')[0].replace(/^\/+/, '');
+  return `${BASE}${relativePath}?v=20261108-hero`;
+}
+
+function setHeroImage() {
+  const image = $('#hi');
+  const fallback = heroImageUrl('images/eyes.jpg');
+  const requested = heroImageUrl(SITE.hero || 'images/eyes.jpg');
+  if (image.dataset.heroSrc === requested) return;
+  image.dataset.heroSrc = requested;
+  let usedFallback = false;
+  image.onerror = () => {
+    if (usedFallback) return;
+    usedFallback = true;
+    image.src = fallback;
+  };
+  image.src = requested;
+}
+
+// The stylesheet animation may have started while Firebase scripts were still loading.
+// Restart it after inserting the quote so the full entrance is visible on every reload.
+renderSplashQuote(true);
+setHeroImage();
 siteDataReady.then(renderHomeContent);
 
 /* Start scroll reveals after the quote screen closes. */

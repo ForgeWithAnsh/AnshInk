@@ -135,7 +135,10 @@ function render() {
             <div class="t">${esc(item.title)}</div>
             ${item.displayPrice != null ? `<div class="sketch-card-price">₹${Number(item.displayPrice).toLocaleString('en-IN')}</div>` : ''}
             <div class="sketch-card-rating">${sketchRatingSummary(item)}</div>
-            <button class="btn o sm sketch-review-button" onclick="event.stopPropagation();openSketchReviews('${item.id}')">Reviews &amp; rate</button>
+            <div class="row sketch-card-buttons">
+              ${isAdm() ? `<button class="btn o sm" onclick="event.stopPropagation();editSketchPreset('${item.id}')">Edit sketch</button>` : ''}
+              <button class="btn o sm sketch-review-button" onclick="event.stopPropagation();openSketchReviews('${item.id}')">Reviews &amp; rate</button>
+            </div>
           </article>
         `).join('')}
       </div>
@@ -208,7 +211,7 @@ function editSketchPreset(id) {
   const selected = item.orderPreset || {};
   O.sketchEditPhotos = null;
   show(`
-    <h2>Order like this · ${esc(item.title)}</h2>
+    <h2>Edit sketch · ${esc(item.title)}</h2>
     <p class="mu">Set a sketch-specific starting price and the choices preselected for customers. Their estimate adjusts if they change a priced option.</p>
     <label for="sketch-edit-title">Sketch title</label>
     <input id="sketch-edit-title" maxlength="60" value="${esc(item.title)}">

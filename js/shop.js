@@ -22,6 +22,8 @@ function renderShop() {
   $('#shop-heading').textContent = SITE.shopHeading || 'InkShop';
   $('#shop-intro').textContent = SITE.shopIntro || '';
   $('#shop-notice').textContent = SITE.shopNotice || '';
+  $('#shop-admin-tools').innerHTML = isAdm() ? '<div class="shop-admin-add"><button class="btn" onclick="showShopProductForm()">＋ Add InkShop card</button></div>' : '';
+  if (isAdm()) adminShopItems = shopProducts.slice();
   const categories = ['All', ...(SITE.shopCategories || [])];
   $('#shop-categories').innerHTML = categories.map(category => `
     <button class="btn ${category === selectedShopCategory ? '' : 'o'} sm" data-category="${esc(category)}" onclick="selectShopCategory(this.dataset.category)">${esc(category)}</button>
@@ -30,10 +32,11 @@ function renderShop() {
   shopList.innerHTML = visible.length ? visible.map(product => {
     const pinUrl = safeExternalUrl(product.pinterestUrl || '');
     return `
-      <article class="shop-card">
+      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}">
         <img src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}" loading="lazy">
         <div class="shop-card-body">
           <div class="shop-category">${esc(product.category || 'InkShop')}</div>
+          ${product.active === false ? '<span class="badge bad">Hidden</span>' : ''}
           <h2>${esc(product.title || 'Sketch design')}</h2>
           <p>${esc(product.description || '')}</p>
           <div class="shop-price">₹${Number(product.price || 0).toLocaleString('en-IN')}</div>
@@ -41,6 +44,7 @@ function renderShop() {
             <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
             ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}
           </div>
+          ${isAdm() ? `<div class="row shop-admin-actions"><button class="btn o sm" onclick="showShopProductForm('${product.id}')">Edit card</button><button class="btn o sm" onclick="deleteShopProduct('${product.id}')">Delete</button></div>` : ''}
         </div>
       </article>
     `;
@@ -50,7 +54,9 @@ function renderShop() {
 async function loadShop() {
   await siteDataReady;
   try {
-    const snapshot = await db.collection('shopProducts').where('active', '==', true).get();
+    const snapshot = isAdm()
+      ? await db.collection('shopProducts').get()
+      : await db.collection('shopProducts').where('active', '==', true).get();
     shopProducts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
       .sort((first, second) => (second.createdAt || 0) - (first.createdAt || 0));
   } catch (error) {
@@ -61,4 +67,4 @@ async function loadShop() {
   renderShop();
 }
 
-loadShop();
+onUser(() => loadShop());
