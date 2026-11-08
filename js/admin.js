@@ -36,8 +36,11 @@ onUser(async user => {
   main.innerHTML = '<p class="mu">Loading orders…</p>';
 
   try {
+    await siteDataReady;
     O.list = await ords(true);
     await sweep(O.list);
+    await loadAdminShopItems();
+    O.adminTab = O.adminTab || 'orders';
     render();
   } catch (error) {
     console.error('Could not load orders:', error);
@@ -72,9 +75,23 @@ async function sendArtistVerification() {
 }
 
 function render() {
-  const orders = O.list.slice().sort((a, b) => b.at - a.at);
-
   main.innerHTML = `
+    <h1>Artist panel</h1>
+    <p><a class="btn o sm" href="${PG('sketches')}">Manage sketches &amp; order presets</a></p>
+    <div class="admin-tabs">
+      <button class="tab2 ${O.adminTab === 'orders' ? 'on' : ''}" onclick="renderAdminTab('orders')">Orders</button>
+      <button class="tab2 ${O.adminTab === 'site' ? 'on' : ''}" onclick="renderAdminTab('site')">Website text &amp; logo</button>
+      <button class="tab2 ${O.adminTab === 'pricing' ? 'on' : ''}" onclick="renderAdminTab('pricing')">Order options &amp; prices</button>
+      <button class="tab2 ${O.adminTab === 'shop' ? 'on' : ''}" onclick="renderAdminTab('shop')">InkShop</button>
+    </div>
+    <section id="admin-section"></section>
+  `;
+  renderAdminTab(O.adminTab || 'orders');
+}
+
+function renderOrdersSection() {
+  const orders = O.list.slice().sort((a, b) => b.at - a.at);
+  return `
     <h2>All orders</h2>
     ${orders.length ? orders.map(renderOrder).join('') : '<p class="mu">No orders yet.</p>'}
   `;
@@ -98,6 +115,8 @@ function renderOrder(order) {
       <div class="ord-body">
         <p class="mu">
           ${esc(order.subj || 'Person')} · ${esc(order.style || 'Realistic')} · ${order.ppl} person(s) · ${order.items || 0} detail items<br>
+          ${(order.optionSummary || []).map(entry => esc(entry)).join(' · ')}<br>
+          ${order.sourceType === 'shop' ? `InkShop reference · <a href="${esc(order.pinterestUrl || '#')}" target="_blank" rel="noopener">Pinterest source</a><br>` : ''}
           ${esc(order.name)}, ${esc(order.phone)}<br>
           ${esc(order.addr)} – ${esc(order.pin)}<br>
           ${esc(order.note || '')}

@@ -133,6 +133,7 @@ function render() {
               </button>
             ` : ''}
             <div class="t">${esc(item.title)}</div>
+            ${item.displayPrice != null ? `<div class="sketch-card-price">₹${Number(item.displayPrice).toLocaleString('en-IN')}</div>` : ''}
             <div class="sketch-card-rating">${sketchRatingSummary(item)}</div>
             <button class="btn o sm sketch-review-button" onclick="event.stopPropagation();openSketchReviews('${item.id}')">Reviews &amp; rate</button>
           </article>
@@ -192,11 +193,93 @@ function openS(id) {
     <p class="mu">${esc(item.description || '')}</p>
     <div class="sketch-detail-rating">${sketchRatingSummary(item)}</div>
     <div class="row">
-      <a class="btn cta" href="${PG('order')}">Order like this</a>
+      <a class="btn cta" href="${PG('order')}?sketch=${encodeURIComponent(item.id)}">Order like this${item.orderPrice != null ? ` · ₹${Number(item.orderPrice).toLocaleString('en-IN')}` : ''}</a>
+      ${isAdm() ? `<button class="btn o" onclick="editSketchPreset('${item.id}')">Edit order details &amp; price</button>` : ''}
       <button class="btn o" onclick="openSketchReviews('${item.id}')">Reviews &amp; rate</button>
       <button class="btn o" onclick="hide()">Close</button>
     </div>
   `);
+}
+
+function editSketchPreset(id) {
+  if (!isAdm()) return;
+  const item = items.find(sketch => sketch.id === id);
+  if (!item) return;
+  const selected = item.orderPreset || {};
+  O.sketchEditPhotos = null;
+  show(`
+    <h2>Order like this · ${esc(item.title)}</h2>
+    <p class="mu">Set a sketch-specific starting price and the choices preselected for customers. Their estimate adjusts if they change a priced option.</p>
+    <label for="sketch-edit-title">Sketch title</label>
+    <input id="sketch-edit-title" maxlength="60" value="${esc(item.title)}">
+    <label for="sketch-edit-description">Sketch description</label>
+    <textarea id="sketch-edit-description" rows="2" maxlength="120">${esc(item.description || '')}</textarea>
+    <label for="sketch-edit-category">Gallery category</label>
+    <select id="sketch-edit-category"><option value="human" ${item.category === 'human' ? 'selected' : ''}>Human sketches</option><option value="other" ${item.category === 'other' ? 'selected' : ''}>Other sketches</option></select>
+    <label for="sketch-edit-photos">Replace gallery photos (up to 4)</label>
+    <input id="sketch-edit-photos" type="file" accept="image/*" multiple onchange="pickSketchPresetPhotos(this)">
+    <div id="sketch-edit-photo-preview" class="sth">${item.photos.map(photo => `<img src="${photoUrl(photo)}" alt="Current sketch image">`).join('')}</div>
+    <label for="sketch-display-price">Price shown on the sketch card ₹ (optional)</label>
+    <input id="sketch-display-price" type="number" min="0" step="10" value="${item.displayPrice ?? ''}">
+    <label for="sketch-order-price">Starting price in the order form ₹ (leave blank to use standard prices)</label>
+    <input id="sketch-order-price" type="number" min="0" step="10" value="${item.orderPrice ?? ''}">
+    ${ORDER_SETTINGS.categories.map(category => `
+      <label for="preset-${esc(category.id)}">${esc(category.label)}</label>
+      <select id="preset-${esc(category.id)}">
+        ${category.options.map(option => `<option value="${esc(option.id)}" ${selected[category.id] === option.id ? 'selected' : ''}>${esc(option.label)}${option.available ? ` (${option.price >= 0 ? '+' : ''}₹${option.price})` : ' — Unavailable'}</option>`).join('')}
+      </select>
+    `).join('')}
+    <div class="row"><button class="btn" onclick="saveSketchPreset('${id}')">Save</button><button class="btn o" onclick="openS('${id}')">Cancel</button></div>
+  `);
+}
+
+function pickSketchPresetPhotos(input) {
+  const files = Array.from(input.files).slice(0, 4);
+  if (!files.length) return;
+  Promise.all(files.map(file => new Promise(resolve => rz(file, resolve)))).then(photos => {
+    if (photos.reduce((sum, photo) => sum + photo.length, 0) > 900000) {
+      O.sketchEditPhotos = null;
+      input.value = '';
+      return toast('These photos are too large together. Choose fewer or smaller photos.');
+    }
+    O.sketchEditPhotos = photos;
+    $('#sketch-edit-photo-preview').innerHTML = photos.map(photo => `<img src="${photo}" alt="New sketch image preview">`).join('');
+  });
+}
+
+async function saveSketchPreset(id) {
+  if (!isAdm()) return;
+  const item = items.find(sketch => sketch.id === id);
+  const title = $('#sketch-edit-title').value.trim();
+  const description = $('#sketch-edit-description').value.trim();
+  const displayPrice = $('#sketch-display-price').value.trim();
+  const rawPrice = $('#sketch-order-price').value.trim();
+  const category = $('#sketch-edit-category').value;
+  if (!title) return toast('Enter a sketch title');
+  if (displayPrice && (!Number.isFinite(Number(displayPrice)) || Number(displayPrice) < 0)) return toast('Enter a valid card price');
+  if (rawPrice && (!Number.isFinite(Number(rawPrice)) || Number(rawPrice) < 0)) return toast('Enter a valid price');
+  const orderPreset = Object.fromEntries(ORDER_SETTINGS.categories.map(category => [
+    category.id,
+    $(`#preset-${CSS.escape(category.id)}`).value
+  ]));
+  try {
+    const changes = { title, description, category, displayPrice: displayPrice ? Number(displayPrice) : null, orderPrice: rawPrice ? Number(rawPrice) : null, orderPreset };
+    if (O.sketchEditPhotos) changes.photos = O.sketchEditPhotos;
+    await db.collection('gallery').doc(id).update(changes);
+    item.title = title;
+    item.description = description;
+    item.category = category;
+    if (O.sketchEditPhotos) item.photos = O.sketchEditPhotos;
+    item.displayPrice = displayPrice ? Number(displayPrice) : null;
+    item.orderPrice = rawPrice ? Number(rawPrice) : null;
+    item.orderPreset = orderPreset;
+    hide();
+    render();
+    toast('Order details and price saved');
+  } catch (error) {
+    console.error('Could not save sketch order preset:', error);
+    toast('Could not save order details');
+  }
 }
 
 function openSketchReviews(id) {

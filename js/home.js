@@ -16,9 +16,10 @@ function chooseQuote() {
     // Local storage may be unavailable in private browsing modes.
   }
 
-  let index = Math.floor(Math.random() * CFG.quotes.length);
-  if (CFG.quotes.length > 1 && index === previousIndex) {
-    index = (index + 1 + Math.floor(Math.random() * (CFG.quotes.length - 1))) % CFG.quotes.length;
+  const quotes = SITE.quotes?.length ? SITE.quotes : CFG.quotes;
+  let index = Math.floor(Math.random() * quotes.length);
+  if (quotes.length > 1 && index === previousIndex) {
+    index = (index + 1 + Math.floor(Math.random() * (quotes.length - 1))) % quotes.length;
   }
 
   try {
@@ -27,36 +28,43 @@ function chooseQuote() {
     // The quote still works when it cannot be remembered.
   }
 
-  return CFG.quotes[index];
+  return quotes[index];
 }
 
-$('#sq').textContent = `“${chooseQuote()}”`;
-$('#hi').src = BASE + CFG.hero;
-$('#hn').textContent = CFG.artist;
-$('#hb').textContent = CFG.bio;
+function renderHomeContent() {
+  $('#sq').textContent = `“${chooseQuote()}”`;
+  $('#hi').src = /^(data:|https?:\/\/)/.test(SITE.hero || '') ? SITE.hero : BASE + SITE.hero;
+  $('#hn').textContent = SITE.artist;
+  $('#hb').textContent = SITE.bio;
+  $('#hero-order-cta').textContent = SITE.heroCta || 'Order one for yourself';
+  $('#gal').textContent = SITE.galleryHeading || 'My sketches';
+  $('#all-sketches-cta').textContent = SITE.allSketchesCta || 'All sketches';
+  $('#sq').textContent = `“${chooseQuote()}”`;
+  $('#abt').textContent = SITE.aboutHeading || 'About me';
 
-const today = new Date();
-const birthDate = new Date(2008, 4, 11);
-let age = today.getFullYear() - birthDate.getFullYear();
-if (today.getMonth() < birthDate.getMonth()
-  || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
-  age--;
+  const today = new Date();
+  const birthDate = new Date(2008, 4, 11);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  if (today.getMonth() < birthDate.getMonth()
+    || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age--;
+
+  $('#about').innerHTML = `
+    ${(SITE.story || []).map(paragraph => `<p>${esc(paragraph)}</p>`).join('')}
+    <ul class="det">
+      ${(SITE.about || []).map(({ label, value }) => `
+        <li><b>${esc(label)}:</b> ${esc(label === 'Age / City' ? `${age} · ${value}` : value)}</li>
+      `).join('')}
+    </ul>
+    <p>
+      <b>${esc(SITE.contactHeading || 'Questions or custom requests?')}</b><br>
+      Email <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a> or DM
+      <a href="https://instagram.com/${encodeURIComponent(SITE.insta)}" target="_blank" rel="noopener">@${esc(SITE.insta)}</a>
+      on Instagram.
+    </p>
+  `;
 }
 
-$('#about').innerHTML = `
-  ${CFG.story.map(paragraph => `<p>${esc(paragraph)}</p>`).join('')}
-  <ul class="det">
-    ${CFG.about.map(([label, value]) => `
-      <li><b>${label}:</b> ${esc(label === 'Age / City' ? `${age} · ${value}` : value)}</li>
-    `).join('')}
-  </ul>
-  <p>
-    <b>Questions or custom requests?</b><br>
-    Email <a href="mailto:${CFG.email}">${CFG.email}</a> or DM
-    <a href="https://instagram.com/${CFG.insta}" target="_blank" rel="noopener">@${CFG.insta}</a>
-    on Instagram.
-  </p>
-`;
+siteDataReady.then(renderHomeContent);
 
 /* Start scroll reveals after the quote screen closes. */
 const revealObserver = new IntersectionObserver(entries => {
@@ -109,6 +117,9 @@ async function loadGallery() {
       return {
         id: doc.id,
         featured: data.featured === true,
+        orderPrice: data.orderPrice == null ? null : Number(data.orderPrice),
+        displayPrice: data.displayPrice == null ? null : Number(data.displayPrice),
+        orderPreset: data.orderPreset || {},
         homeOrder: data.homeOrder,
         createdAt: data.createdAt || 0,
         legacyId: data.legacyId || legacySketchIdForTitle(data.title),
@@ -153,9 +164,10 @@ async function loadGallery() {
             <span class="st" id="st-${sketch.id}"></span>
             <span class="mu" id="rc-${sketch.id}"></span>
           </div>
+          ${sketch.displayPrice != null ? `<div class="card-display-price">Gallery price: ₹${sketch.displayPrice.toLocaleString('en-IN')}</div>` : ''}
           <div class="row">
             <button class="btn o sm" onclick="openRev('${sketch.id}')">Reviews &amp; rate</button>
-            <a class="btn sm" href="${PG('order')}">Order like this</a>
+            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this${sketch.orderPrice != null ? ` · ₹${sketch.orderPrice.toLocaleString('en-IN')}` : ''}</a>
           </div>
         </div>
       </article>

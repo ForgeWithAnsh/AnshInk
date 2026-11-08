@@ -1,17 +1,16 @@
 /* Sketch order form: design, customer details, review, and submit. */
-const price = options => Math.round((
-  CFG.sizes[options.size]
-    * (1 + CFG.extraPerson * (options.ppl - 1))
-    * CFG.styles[options.style]
-    + CFG.itemPrice * options.items
-) / 10) * 10;
+const price = order => order.fixedPrice != null
+  ? Number(order.fixedPrice)
+  : orderOptionPrice(order.selections, order.priceBaseline, order.priceBase ?? ORDER_SETTINGS.basePrice);
+
+const selectedLabel = (order, key) => optionById(key, order.selections?.[key])?.label || '';
 
 function showOrderStep(content) {
   $('#ordpage').innerHTML = `<div class="box">${content}</div>`;
   scrollTo(0, 0);
 }
 
-onUser(user => {
+onUser(async user => {
   if (!user) {
     showOrderStep(`
       <h2>Order a sketch</h2>
@@ -21,16 +20,18 @@ onUser(user => {
     return;
   }
 
-  if (!O.order) startOrder();
+  if (!O.order) await startOrder();
 });
 
-function startOrder() {
+async function startOrder() {
+  await siteDataReady;
+  const params = new URLSearchParams(location.search);
+  const shopId = params.get('shop');
+  const sketchId = params.get('sketch');
+  const selections = defaultOrderSelections();
   O.order = {
-    subj: 'Person',
-    style: 'Realistic',
-    size: Object.keys(CFG.sizes)[1],
-    ppl: 1,
-    items: 0,
+    sourceType: 'custom',
+    selections,
     photo: '',
     title: '',
     name: me.name,
@@ -39,16 +40,57 @@ function startOrder() {
     pincode: me.pincode || '',
     note: ''
   };
+
+  if (shopId) {
+    try {
+      const snapshot = await db.collection('shopProducts').doc(shopId).get();
+      if (!snapshot.exists || snapshot.data().active === false) throw new Error('InkShop item unavailable');
+      const product = snapshot.data();
+      Object.assign(O.order, {
+        sourceType: 'shop',
+        shopProductId: shopId,
+        title: product.title,
+        photo: product.image,
+        fixedPrice: Number(product.price),
+        pinterestUrl: product.pinterestUrl || '',
+        shopDescription: product.description || ''
+      });
+    } catch (error) {
+      console.error('Could not load InkShop product:', error);
+      showOrderStep('<h2>InkShop item unavailable</h2><p class="mu">This item may have been removed. Please return to InkShop and choose another design.</p><a class="btn" href="shop.html">Open InkShop</a>');
+      return;
+    }
+  } else if (sketchId) {
+    try {
+      const snapshot = await db.collection('gallery').doc(sketchId).get();
+      if (!snapshot.exists) throw new Error('Sketch not found');
+      const sketch = snapshot.data();
+      O.order.sourceType = 'gallery';
+      O.order.gallerySketchId = sketchId;
+      O.order.title = `Sketch like ${sketch.title || 'this'}`;
+      O.order.photo = (sketch.photos || [sketch.photo]).filter(Boolean)[0] || '';
+      const hasSpecificPrice = Number.isFinite(Number(sketch.orderPrice)) && sketch.orderPrice !== null;
+      O.order.priceBase = hasSpecificPrice ? Number(sketch.orderPrice) : ORDER_SETTINGS.basePrice;
+      O.order.priceBaseline = hasSpecificPrice ? (sketch.orderPreset || {}) : null;
+      O.order.selections = { ...selections };
+      Object.entries(sketch.orderPreset || {}).forEach(([categoryId, optionId]) => {
+        if (optionById(categoryId, optionId)?.available) O.order.selections[categoryId] = optionId;
+      });
+    } catch (error) {
+      console.error('Could not load sketch preset:', error);
+      toast('Could not load this sketch preset. Please try again.');
+    }
+  }
   showDesignStep();
 }
 
-function optionCards(key, options) {
+function optionCards(category, order) {
   return `
     <div class="opt">
-      ${options.map(([value, label]) => `
-        <button class="${O.order[key] === value ? 'on' : ''}"
-          onclick="O.order['${key}']=${typeof value === 'number' ? value : `'${value}'`};showDesignStep()">
-          ${label}
+      ${category.options.map(option => `
+        <button class="${order.selections[category.id] === option.id ? 'on' : ''} ${option.available ? '' : 'unavailable'}"
+          ${option.available ? `onclick="O.order.selections['${esc(category.id)}']='${esc(option.id)}';showDesignStep()"` : 'disabled'}>
+          ${esc(option.label)}<br><span class="mu">${option.price >= 0 ? '+' : '−'}₹${Math.abs(Number(option.price) || 0)}${option.available ? '' : ' · ⛔ Unavailable'}</span>
         </button>
       `).join('')}
     </div>
@@ -57,24 +99,28 @@ function optionCards(key, options) {
 
 function showDesignStep() {
   const order = O.order;
+  if (order.sourceType === 'shop') {
+    showOrderStep(`
+      <h2>Order from InkShop</h2>
+      <img class="pre" src="${esc(order.photo)}" alt="Pinterest reference for ${esc(order.title)}">
+      <h3>${esc(order.title)}</h3>
+      <p class="mu">${esc(order.shopDescription || '')}</p>
+      <p>${esc(SITE.shopNotice)}</p>
+      ${order.pinterestUrl ? `<a href="${esc(order.pinterestUrl)}" target="_blank" rel="noopener">Open this reference on Pinterest</a>` : ''}
+      <div class="tot">₹${price(order).toLocaleString('en-IN')}</div>
+      <div class="row order-actions"><button class="btn" onclick="showDetailsStep()">Next</button><a class="btn o" href="${PG('shop')}">Cancel</a></div>
+    `);
+    return;
+  }
+  const sketchPreset = order.sourceType === 'gallery';
   showOrderStep(`
-    <h2>Design your sketch</h2>
-    <label>What should I draw?</label>
-    ${optionCards('subj', ['Person', 'Pet / animal', 'Object / scene'].map(value => [value, value]))}
-    <label>Style</label>
-    ${optionCards('style', Object.keys(CFG.styles).map(value => [value, value]))}
-    <label>Paper size</label>
-    ${optionCards('size', Object.entries(CFG.sizes).map(([value, amount]) => [value, `${value}<br><span class="mu">from ₹${amount}</span>`]))}
-    <label>Number of people</label>
-    ${optionCards('ppl', [1, 2, 3, 4].map(count => [count, `${count}${count > 1 ? ' people' : ' person'}`]))}
-    <label>Extra detailed items (jewellery, necklace…)</label>
-    ${optionCards('items', [0, 1, 2, 3].map(count => [count, count ? `${count} (+₹${count * CFG.itemPrice})` : 'None']) )}
+    <h2>${sketchPreset ? 'Order this sketch style' : 'Design your sketch'}</h2>
+    ${sketchPreset ? `<p class="mu">The sketch details and price are preselected. You can continue as-is or change an available option.</p><img class="pre" src="${esc(order.photo)}" alt="Sketch reference">` : ''}
+    ${ORDER_SETTINGS.categories.map(category => `<label>${esc(category.label)}</label>${optionCards(category, order)}`).join('')}
     <p class="mu">
-      Charcoal pencils. Realistic is my most detailed style; the others are quicker, so they cost a little less.
-      Ready in about 3–4 days (6–9 hours of work). Delivery charges are paid by you and confirmed after you order.
-      For very detailed photos the price may change slightly; I'll confirm before I start.
+      ${esc(SITE.orderNotice || 'Delivery charges are confirmed after you order. The final price is confirmed before I start.')}
     </p>
-    <div class="tot">₹${price(order)}</div>
+    <div class="tot">₹${price(order).toLocaleString('en-IN')}</div>
     <div class="row order-actions">
       <button class="btn" onclick="showDetailsStep()">Next</button>
       <a class="btn o" href="${PG('index')}">Cancel</a>
@@ -87,13 +133,15 @@ function showDetailsStep() {
 
   showOrderStep(`
     <h2>Your details</h2>
-    <label for="photo">Reference photo (clear, well-lit)</label>
-    <label class="photo-upload" for="photo">
-      <span class="photo-upload-icon" aria-hidden="true">↑</span>
-      <span class="photo-upload-copy"><strong>Choose a photo</strong><small>JPG, PNG or another image format</small></span>
-      <input id="photo" class="photo-upload-input" type="file" accept="image/*" onchange="loadOrderPhoto(this)">
-    </label>
-    ${order.photo ? `<img class="pre" src="${order.photo}" alt="Reference photo preview">` : ''}
+    ${order.sourceType === 'shop' ? '<p class="mu">The Pinterest reference will be used to make your hand-drawn sketch.</p>' : `
+      <label for="photo">${order.photo ? 'Reference image (you can replace it)' : 'Reference photo (clear, well-lit)'}</label>
+      <label class="photo-upload" for="photo">
+        <span class="photo-upload-icon" aria-hidden="true">↑</span>
+        <span class="photo-upload-copy"><strong>${order.photo ? 'Replace reference photo' : 'Choose a photo'}</strong><small>JPG, PNG or another image format</small></span>
+        <input id="photo" class="photo-upload-input" type="file" accept="image/*" onchange="loadOrderPhoto(this)">
+      </label>
+      ${order.photo ? `<img class="pre" src="${esc(order.photo)}" alt="Reference photo preview">` : ''}
+    `}
     <label for="title">Name this sketch (optional)</label>
     <input id="title" value="${esc(order.title)}" placeholder="e.g. Mom's portrait">
     <label for="name">Full name</label>
@@ -170,6 +218,11 @@ function showReviewStep() {
   const order = O.order;
 
   if (!order.photo) return toast('Please upload a reference photo');
+  const unavailableSelection = ORDER_SETTINGS.categories.find(category => {
+    const selected = category.options.find(option => option.id === order.selections[category.id]);
+    return selected && !selected.available;
+  });
+  if (unavailableSelection) return toast(`Choose an available option for ${unavailableSelection.label}`);
   if (!order.name || !/^\d{10}$/.test(order.phone) || !order.address || !/^\d{6}$/.test(order.pincode)) {
     return toast('Fill name, 10-digit mobile, address and 6-digit pincode');
   }
@@ -177,14 +230,16 @@ function showReviewStep() {
   showOrderStep(`
     <h2>Review &amp; send</h2>
     <p>
-      ${order.subj} · ${order.style} · ${order.size} · ${order.ppl} person(s) · ${order.items} detail item(s)<br>
+      ${esc(order.title || ORDER_SETTINGS.categories.map(category => selectedLabel(order, category.id)).filter(Boolean).join(' · '))}<br>
+      ${order.sourceType === 'shop' ? `<span class="mu">Pinterest reference · ${esc(order.shopDescription || '')}</span><br>` : `<span class="mu">${esc(ORDER_SETTINGS.categories.map(category => `${category.label}: ${selectedLabel(order, category.id)}`).filter(Boolean).join(' · '))}</span><br>`}
       <span class="mu">${esc(order.name)}, ${esc(order.address)} – ${esc(order.pincode)}</span>
     </p>
-    <div class="tot">Estimate ₹${price(order)}</div>
+    <div class="tot">${order.fixedPrice != null ? 'Price' : 'Estimate'} ₹${price(order).toLocaleString('en-IN')}</div>
     <div class="mu">
       + delivery charges.
-      <b>Your photo will be checked, and the final price and delivery charge will be confirmed.</b>
-      Once the order is accepted, a Pay button will appear in ‘My orders’.
+      ${order.sourceType === 'shop'
+        ? '<b>This Pinterest reference will be made into a hand-drawn sketch.</b> Delivery charges will be confirmed before payment.'
+        : '<b>Your photo will be checked, and the final price and delivery charge will be confirmed.</b> Once the order is accepted, a Pay button will appear in ‘My orders’.'}
     </div>
     <div class="row order-actions">
       <button class="btn" onclick="placeOrder()">Send order request</button>
@@ -204,11 +259,23 @@ async function placeOrder() {
       const orderId = String(nextNumber).padStart(4, '0');
       const orderData = {
         ...order,
-        title: order.title || `${order.style} ${order.subj.toLowerCase()}`,
+        title: order.title || ORDER_SETTINGS.categories.map(category => selectedLabel(order, category.id)).filter(Boolean).join(' '),
+        subj: selectedLabel(order, 'subject') || 'Person',
+        style: selectedLabel(order, 'style') || 'Realistic',
+        size: selectedLabel(order, 'size'),
+        ppl: Number(order.selections?.people || 1),
+        items: Number(order.selections?.details || 0),
         id: orderId,
         uid: me.id,
         email: me.email,
         amount: price(order),
+        selections: order.selections || {},
+        optionSummary: ORDER_SETTINGS.categories.map(category => `${category.label}: ${selectedLabel(order, category.id)}`).filter(Boolean),
+        optionPrices: ORDER_SETTINGS.categories.map(category => ({
+          category: category.label,
+          option: selectedLabel(order, category.id),
+          priceChange: optionById(category.id, order.selections?.[category.id])?.price || 0
+        })),
         st: 0,
         at: TS()
       };

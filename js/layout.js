@@ -20,8 +20,11 @@ function goTo(id) {
   requestAnimationFrame(animateScroll);
 }
 
-(function renderSharedLayout() {
+async function renderSharedLayout() {
+  await siteDataReady;
   const isHome = document.body.dataset.page === 'home';
+  document.title = document.title.replace('AnshInk', SITE.siteName);
+  applyFavicon();
   const profileIcon = `
     <svg viewBox="0 0 40 40" aria-hidden="true">
       <clipPath id="profile-clip"><circle cx="20" cy="20" r="20"></circle></clipPath>
@@ -35,12 +38,15 @@ function goTo(id) {
 
   $('#hdr').innerHTML = `
     <header>
-      <a class="logo" href="${PG('index')}">✏ Ansh<i>Ink</i></a>
+      <div class="brand-group">
+        <a class="logo" href="${PG('index')}">✏ ${esc(SITE.siteName)}</a>
+        <a class="btn sm shop-nav" href="${PG('shop')}">InkShop</a>
+      </div>
       <nav>
-        <a href="${PG('index')}">Home</a>
-        <a href="${PG('index')}#gal" data-go="gal">Gallery</a>
-        <a href="${PG('index')}#abt" data-go="abt">About</a>
-        <a href="${PG('reviews')}">Reviews</a>
+        <a href="${PG('index')}">${esc(SITE.navHome || 'Home')}</a>
+        <a href="${PG('index')}#gal" data-go="gal">${esc(SITE.navGallery || 'Gallery')}</a>
+        <a href="${PG('index')}#abt" data-go="abt">${esc(SITE.navAbout || 'About')}</a>
+        <a href="${PG('reviews')}">${esc(SITE.navReviews || 'Reviews')}</a>
         <div class="pfw">
           <button class="pfb" id="pf" aria-label="Account">${profileIcon}</button>
           <div class="pmenu" id="pm"></div>
@@ -51,10 +57,10 @@ function goTo(id) {
 
   $('#ftr').innerHTML = `
     <footer>
-      Support: <a href="mailto:${CFG.email}">${CFG.email}</a> ·
-      Instagram <a href="https://instagram.com/${CFG.insta}">@${CFG.insta}</a><br>
+      ${esc(SITE.footerSupport || 'Support')}: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a> ·
+      Instagram <a href="https://instagram.com/${encodeURIComponent(SITE.insta)}">@${esc(SITE.insta)}</a><br>
       <a id="al" href="${PG('admin')}" hidden>Artist panel</a>
-      <div class="mu">© ${CFG.site}</div>
+      <div class="mu">© ${esc(SITE.siteName)}</div>
     </footer>
   `;
 
@@ -72,9 +78,12 @@ function goTo(id) {
     event.stopPropagation();
     $('#pm').classList.toggle('on');
   });
-  document.addEventListener('click', () => $('#pm').classList.remove('on'));
+  if (!O.layoutDocumentHandlerRegistered) {
+    O.layoutDocumentHandlerRegistered = true;
+    document.addEventListener('click', () => $('#pm').classList.remove('on'));
+  }
 
-  onUser(() => {
+  function updateProfileMenu() {
     $('#pm').innerHTML = me ? `
       <div class="mu">Hi, ${esc(me.name || 'there')}</div>
       <a href="${PG('account')}">My account</a>
@@ -102,5 +111,14 @@ function goTo(id) {
     }
 
     $('#al').hidden = !isAdm();
-  });
-})();
+  }
+
+  if (!O.layoutUserCallbackRegistered) {
+    O.layoutUserCallbackRegistered = true;
+    onUser(updateProfileMenu);
+  } else {
+    updateProfileMenu();
+  }
+}
+
+renderSharedLayout();
