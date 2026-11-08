@@ -32,6 +32,7 @@ h2.sec.in:after{width:140px}
 .th{display:flex;gap:6px;padding:8px 12px 0}.th img{width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent}.th img.on{border-color:var(--ac)}
 .cb{padding:12px}.cb h3{margin:0}.st{color:#e0a100;letter-spacing:1px}
 .card-rating{margin:6px 0}
+.card-display-price{color:var(--ac);font-weight:700;margin:3px 0 8px}
 .rating-input{font-size:28px;cursor:pointer}
 .review-actions{margin-top:12px}
 .gallery-loading,.gallery-empty{text-align:center;grid-column:1/-1;padding:20px}

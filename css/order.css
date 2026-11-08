@@ -2,6 +2,7 @@
 .opt{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
 .opt button{border:1px solid var(--ln);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:background .2s;background:var(--card)}
 .opt button.on{border-color:var(--ac);background:var(--ac);color:#fbf3e6}.opt button.on .mu{color:#e8d9c4}
+.opt button.unavailable,.opt button:disabled{opacity:.48;filter:grayscale(.7);cursor:not-allowed;text-decoration:line-through;background:repeating-linear-gradient(135deg,var(--card),var(--card) 8px,#e8dfd4 8px,#e8dfd4 10px)}
 .tot{font-size:26px;font-weight:bold}
 .pre{width:100%;max-height:200px;object-fit:contain;margin-top:6px;border-radius:8px;background:#efe3d0}
 .order-actions{margin-top:12px}.order-actions:first-of-type{margin-top:10px}
