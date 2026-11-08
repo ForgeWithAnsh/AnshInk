@@ -64,19 +64,15 @@ Google Pay can accept UPI payments, but its [official website integration](https
 
 The home page, All sketches page, and review page use the Firestore `gallery` collection. All uploaded sketches appear under **All sketches**; only sketches you mark **Show this sketch on the home page** appear in the homepage showcase. In the Artist view of **All sketches**, the **Homepage picks**, **Human sketches**, and **Other sketches** tabs have up/down controls to reorder their lists independently. You can also use **Feature on home** / **On home** on a sketch card to change the homepage selection. Sign in with the verified Google account `forgewithansh@gmail.com`, open **All sketches**, choose **Add a sketch**, enter a title/category/description, and upload up to four photos. The first photo is the cover. Use **Remove** on a sketch card to take it off the site.
 
-To move the current homepage sketches into Firebase, do this once after publishing the code and Firestore rules:
+The gallery photos and reviews you uploaded are stored in Firestore and are independent of the local `images/` folder. The current code uses `images/eyes.jpg` for the homepage hero; the other local files are not required to show uploaded gallery items. Keep your own source-image backup if you may want to upload those files again.
 
-1. Sign in as `forgewithansh@gmail.com` and go to **All sketches > Add a sketch**.
-2. Upload each sketch as a separate item. The local `images/` folder still has source photos to choose in the file picker.
-3. For existing reviews to stay attached, choose the matching item in **Link any existing reviews** when adding that old sketch:
+## Edit the website and manage InkShop
 
-   | Sketch | Suggested photos from `images/` | Existing review link |
-   | --- | --- | --- |
-   | Jhumka Portrait | `jhumka-aesthetic.jpg`, `jhumka-comparison.jpg`, `jhumka-reference.jpg`, `jhumka-sketch.jpg` | Jhumka Portrait |
-   | Hidden Smile | `eyes-aesthetic.jpg`, `eyes-comparison.jpg`, `eyes-reference.jpg`, `eyes-sketch.jpg` | Hidden Smile |
-   | Wind-swept Hair | `windswept-aesthetic.jpg`, `windswept-sketch.jpg` | Wind-swept Hair |
-   | Soft Smile | `softsmile-aesthetic.png` | Soft Smile |
-   | The Look | `thelook-aesthetic.png`, `thelook-reference.png`, `thelook-sketch.jpg` | The Look |
-   | Om Sai Ram Portrait | `omsairam-aesthetic.png`, `omsairam-comparison.png`, `omsairam-reference.jpg`, `omsairam-sketch.jpg` | Om Sai Ram Portrait |
+After publishing the latest files and Firestore rules, sign in with `forgewithansh@gmail.com` and open **Artist panel**. The panel has sections for orders, website text and logo, order options and prices, and InkShop. Changes to site text, favicon, order pricing, and shop listings are stored in Firestore, so they remain separate from the local source images.
 
-4. All uploaded items appear on All sketches. Mark only your chosen best sketches to feature them on the home page. The existing local photo files are retained so you can upload them; after migration, they are not used by the public gallery code. The six photos that were empty placeholders in the old repository are unavailable, so only upload originals you actually have.
+- **Website text & logo** edits the home introduction, About story/details, quotes, navigation text, contact details, shop notice, and homepage image. Upload a small square favicon image and save it to update the browser tab/bookmark logo.
+- **Order options & prices** sets the standard starting price, adds/removes option groups and choices, edits each price adjustment, and marks choices available or unavailable. Changes apply to new orders; submitted orders keep their saved price and selections.
+- **All sketches** lets the artist edit the card display price separately from the price used by **Order like this**, and choose the preselected order details for that sketch.
+- **InkShop** lets the artist add or edit a card with an uploaded Pinterest reference image, title, category, price, description, and Pinterest URL. The shop notice explains that the images are references and the sketches are drawn after ordering.
+
+Publish the complete updated `firestore.rules` file before using these controls. It adds public read and admin-only write access for the `siteSettings`, `orderSettings`, and `shopProducts` collections. No Firebase Blaze plan is required for these Firestore features.
