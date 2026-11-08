@@ -14,7 +14,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
 body:not(.go) #hdr{opacity:0}
 body.go #hdr header{animation:dn .8s both}
 .logo{font-size:22px;font-weight:700;color:var(--ac);text-decoration:none}.logo i{font-weight:500}
-.brand-group{display:flex;align-items:center;gap:10px;white-space:nowrap}.shop-nav{border-radius:18px;padding:7px 12px}
+.brand-group{display:flex;align-items:center;gap:10px;white-space:nowrap}.btn.shop-nav{display:inline-flex;align-items:center;gap:7px;border:1px solid #c9ad86;border-radius:999px;padding:7px 13px;background:linear-gradient(135deg,#fffaf2,#ead8bd);color:#563920;box-shadow:0 3px 10px #5c3f2b22;font-weight:700;letter-spacing:.01em}.btn.shop-nav:hover{background:linear-gradient(135deg,#f3e3ca,#dfc29b);box-shadow:0 5px 14px #5c3f2b33}.shop-icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 nav{display:flex;gap:6px;align-items:center}nav>a{color:var(--tx);text-decoration:none;padding:6px 8px;font-size:15px}
 .pfw{position:relative}
 .pfb{background:none;border:0;padding:0;margin-left:6px;cursor:pointer;display:flex;transition:transform .25s}
