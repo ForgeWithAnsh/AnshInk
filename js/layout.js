@@ -91,7 +91,7 @@ async function renderSharedLayout() {
       <a href="${PG('orders')}">My orders</a>
       ${isAdm() ? `<a href="${PG('admin')}">Artist panel</a>` : ''}
       <a href="#" id="lo">Logout</a>
-    ` : `<a href="${PG('order')}">Order a custom sketch</a><a href="#" id="li">Login / Sign up</a>`;
+    ` : `<a href="#" id="li">Login / Sign up</a>`;
 
     const logout = $('#lo');
     const loginLink = $('#li');
