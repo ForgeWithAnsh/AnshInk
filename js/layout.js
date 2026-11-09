@@ -57,8 +57,10 @@ async function renderSharedLayout() {
 
   $('#ftr').innerHTML = `
     <footer>
-      ${esc(SITE.footerSupport || 'Support')}: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a> ·
-      Instagram <a href="https://instagram.com/${encodeURIComponent(SITE.insta)}">@${esc(SITE.insta)}</a><br>
+      <div class="footer-contact">
+        <span>${esc(SITE.footerSupport || 'Support')}: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></span>
+        <span>Instagram: <a href="https://instagram.com/${encodeURIComponent(SITE.insta)}">@${esc(SITE.insta)}</a></span>
+      </div>
       <a id="al" href="${PG('admin')}" hidden>Artist panel</a>
       <div class="mu">© ${esc(SITE.siteName)}</div>
     </footer>

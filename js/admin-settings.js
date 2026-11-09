@@ -18,19 +18,55 @@ async function loadAdminShopItems() {
   }
 }
 
-async function moveShopProduct(id, direction) {
-  if (!isAdm()) return;
-  const filterCategory = typeof selectedShopCategory === 'undefined' ? 'All' : selectedShopCategory;
-  const visibleItems = adminShopItems.filter(product => filterCategory === 'All' || product.category === filterCategory);
-  const visibleIndex = visibleItems.findIndex(product => product.id === id);
-  const targetIndex = visibleIndex + direction;
-  if (visibleIndex < 0 || targetIndex < 0 || targetIndex >= visibleItems.length) return;
+let shopDragState = null;
 
-  const slots = adminShopItems.map((product, index) => filterCategory === 'All' || product.category === filterCategory ? index : -1).filter(index => index >= 0);
-  [visibleItems[visibleIndex], visibleItems[targetIndex]] = [visibleItems[targetIndex], visibleItems[visibleIndex]];
-  const reordered = adminShopItems.slice();
-  slots.forEach((slot, index) => { reordered[slot] = visibleItems[index]; });
+function startShopProductDrag(event, id) {
+  if (!isAdm() || event.button > 0) return;
+  event.preventDefault();
+  const card = event.currentTarget.closest('[data-shop-id]');
+  const grid = card?.parentElement;
+  if (!card || !grid) return;
 
+  shopDragState = { id, card, grid, pointerId: event.pointerId, moved: false };
+  card.classList.add('shop-dragging');
+  document.addEventListener('pointermove', moveShopProductDrag);
+  document.addEventListener('pointerup', finishShopProductDrag, { once: true });
+  document.addEventListener('pointercancel', cancelShopProductDrag, { once: true });
+}
+
+function moveShopProductDrag(event) {
+  if (!shopDragState || event.pointerId !== shopDragState.pointerId) return;
+  const { card, grid } = shopDragState;
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-shop-id]');
+  if (!target || target === card || target.parentElement !== grid) return;
+
+  const bounds = target.getBoundingClientRect();
+  const after = event.clientY > bounds.top + bounds.height / 2
+    || (Math.abs(event.clientY - (bounds.top + bounds.height / 2)) < bounds.height * .2 && event.clientX > bounds.left + bounds.width / 2);
+  grid.insertBefore(card, after ? target.nextElementSibling : target);
+  shopDragState.moved = true;
+}
+
+function cancelShopProductDrag(event) {
+  if (!shopDragState || event.pointerId !== shopDragState.pointerId) return;
+  shopDragState.card.classList.remove('shop-dragging');
+  document.removeEventListener('pointermove', moveShopProductDrag);
+  shopDragState = null;
+  if ($('#admin-section')) renderShopAdmin();
+}
+
+async function finishShopProductDrag(event) {
+  if (!shopDragState || event.pointerId !== shopDragState.pointerId) return;
+  const { card, grid, moved } = shopDragState;
+  card.classList.remove('shop-dragging');
+  document.removeEventListener('pointermove', moveShopProductDrag);
+  document.removeEventListener('pointercancel', cancelShopProductDrag);
+  shopDragState = null;
+  if (!moved) return;
+
+  const reordered = [...grid.querySelectorAll('[data-shop-id]')]
+    .map(element => adminShopItems.find(product => product.id === element.dataset.shopId))
+    .filter(Boolean);
   try {
     const batch = db.batch();
     reordered.forEach((product, index) => {
@@ -38,13 +74,15 @@ async function moveShopProduct(id, direction) {
     });
     await batch.commit();
     adminShopItems = reordered.map((product, index) => ({ ...product, shopOrder: index }));
-    if (typeof shopProducts !== 'undefined') {
-      shopProducts = adminShopItems.slice();
-      renderShop();
-    }
+    if (typeof shopProducts !== 'undefined') shopProducts = adminShopItems.slice();
     if ($('#admin-section')) renderShopAdmin();
+    if ($('#shop-list')) renderShop();
+    toast('InkShop order saved');
   } catch (error) {
     console.error('Could not reorder InkShop cards:', error);
+    await loadAdminShopItems();
+    if ($('#admin-section')) renderShopAdmin();
+    if ($('#shop-list')) await loadShop();
     toast('Could not save the new InkShop order. Confirm the latest Firestore rules are published.');
   }
 }
@@ -307,11 +345,12 @@ function renderShopAdmin() {
   const content = $('#admin-section');
   content.innerHTML = `
     <div class="admin-shop-heading"><div><h2>InkShop products</h2><p class="mu">Add a reference image, its Pinterest link, and a price for each paper size.</p></div><button class="btn" onclick="showShopProductForm()">+ Add InkShop card</button></div>
-    ${adminShopItems.length ? `<div class="admin-shop-grid">${adminShopItems.map((item, index) => `
-      <article class="admin-shop-card">
+    ${adminShopItems.length ? `<div class="admin-shop-grid">${adminShopItems.map(item => `
+      <article class="admin-shop-card" data-shop-id="${esc(item.id)}">
+        <button class="shop-drag-handle" type="button" aria-label="Hold and drag ${esc(item.title || 'card')} to reorder" title="Hold and drag to reorder" onpointerdown="startShopProductDrag(event,'${item.id}')">⠿</button>
         <img src="${esc(item.image || '')}" alt="">
         <div><b>${esc(item.title || 'Untitled')}</b><div class="mu">${esc(item.category || '')} · ${esc(cardPaperPrice(item, 'shop').size?.label || 'Paper size')} ₹${cardPaperPrice(item, 'shop').price.toLocaleString('en-IN')} · ${item.active === false ? 'Hidden' : 'Published'}</div></div>
-        <div class="row"><button class="btn o sm" onclick="moveShopProduct('${item.id}',-1)" aria-label="Move ${esc(item.title || 'card')} earlier" ${index === 0 ? 'disabled' : ''}>↑</button><button class="btn o sm" onclick="moveShopProduct('${item.id}',1)" aria-label="Move ${esc(item.title || 'card')} later" ${index === adminShopItems.length - 1 ? 'disabled' : ''}>↓</button><button class="btn o sm" onclick="showShopProductForm('${item.id}')">Edit</button><button class="btn o sm" onclick="deleteShopProduct('${item.id}')">Delete</button></div>
+        <div class="row"><button class="btn o sm" onclick="showShopProductForm('${item.id}')">Edit</button><button class="btn o sm" onclick="deleteShopProduct('${item.id}')">Delete</button></div>
       </article>
     `).join('')}</div>` : '<p class="mu">No InkShop cards yet.</p>'}
   `;
