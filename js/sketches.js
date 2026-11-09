@@ -57,6 +57,12 @@ function visibleSketches() {
   return selected.slice().sort((first, second) => compareByOrder(first, second, orderField));
 }
 
+function renderSketchCardPrice(item) {
+  const { size, price: amount } = cardPaperPrice(item);
+  if (!size) return '';
+  return `<div class="sketch-card-price">${esc(size.label)} · ₹${amount.toLocaleString('en-IN')}</div>`;
+}
+
 box.innerHTML = '<div class="shead"><h1>All sketches</h1></div><p class="mu">Loading sketches…</p>';
 
 function photoUrl(photo) {
@@ -133,7 +139,7 @@ function render() {
               </button>
             ` : ''}
             <div class="t">${esc(item.title)}</div>
-            ${item.displayPrice != null ? `<div class="sketch-card-price">₹${Number(item.displayPrice).toLocaleString('en-IN')}</div>` : ''}
+            ${renderSketchCardPrice(item)}
             <div class="sketch-card-rating">${sketchRatingSummary(item)}</div>
             <div class="row sketch-card-buttons">
               ${isAdm() ? `<button class="btn o sm" onclick="event.stopPropagation();editSketchPreset('${item.id}')">Edit sketch</button>` : ''}
@@ -196,8 +202,8 @@ function openS(id) {
     <p class="mu">${esc(item.description || '')}</p>
     <div class="sketch-detail-rating">${sketchRatingSummary(item)}</div>
     <div class="row">
-      <a class="btn cta" href="${PG('order')}?sketch=${encodeURIComponent(item.id)}">Order like this${item.orderPrice != null ? ` · ₹${Number(item.orderPrice).toLocaleString('en-IN')}` : ''}</a>
-      ${isAdm() ? `<button class="btn o" onclick="editSketchPreset('${item.id}')">Edit order details &amp; price</button>` : ''}
+      <a class="btn cta" href="${PG('order')}?sketch=${encodeURIComponent(item.id)}">Order like this</a>
+      ${isAdm() ? `<button class="btn o" onclick="editSketchPreset('${item.id}')">Edit sketch &amp; size prices</button>` : ''}
       <button class="btn o" onclick="openSketchReviews('${item.id}')">Reviews &amp; rate</button>
       <button class="btn o" onclick="hide()">Close</button>
     </div>
@@ -208,11 +214,12 @@ function editSketchPreset(id) {
   if (!isAdm()) return;
   const item = items.find(sketch => sketch.id === id);
   if (!item) return;
-  const selected = item.orderPreset || {};
+  const prices = paperSizePrices(item);
+  const displayedSize = cardPaperSize(item);
   O.sketchEditPhotos = null;
   show(`
     <h2>Edit sketch · ${esc(item.title)}</h2>
-    <p class="mu">Set a sketch-specific starting price and the choices preselected for customers. Their estimate adjusts if they change a priced option.</p>
+    <p class="mu">Customers ordering this sketch can choose only the paper size. Set the price for each size and choose which size price appears on its card.</p>
     <label for="sketch-edit-title">Sketch title</label>
     <input id="sketch-edit-title" maxlength="60" value="${esc(item.title)}">
     <label for="sketch-edit-description">Sketch description</label>
@@ -222,16 +229,12 @@ function editSketchPreset(id) {
     <label for="sketch-edit-photos">Replace gallery photos (up to 4)</label>
     <input id="sketch-edit-photos" type="file" accept="image/*" multiple onchange="pickSketchPresetPhotos(this)">
     <div id="sketch-edit-photo-preview" class="sth">${item.photos.map(photo => `<img src="${photoUrl(photo)}" alt="Current sketch image">`).join('')}</div>
-    <label for="sketch-display-price">Price shown on the sketch card ₹ (optional)</label>
-    <input id="sketch-display-price" type="number" min="0" step="10" value="${item.displayPrice ?? ''}">
-    <label for="sketch-order-price">Starting price in the order form ₹ (leave blank to use standard prices)</label>
-    <input id="sketch-order-price" type="number" min="0" step="10" value="${item.orderPrice ?? ''}">
-    ${ORDER_SETTINGS.categories.map(category => `
-      <label for="preset-${esc(category.id)}">${esc(category.label)}</label>
-      <select id="preset-${esc(category.id)}">
-        ${category.options.map(option => `<option value="${esc(option.id)}" ${selected[category.id] === option.id ? 'selected' : ''}>${esc(option.label)}${option.available ? ` (${option.price >= 0 ? '+' : ''}₹${option.price})` : ' — Unavailable'}</option>`).join('')}
-      </select>
+    ${paperSizeOptions().map(option => `
+      <label for="sketch-size-price-${esc(option.id)}">${esc(option.label)} price ₹</label>
+      <input id="sketch-size-price-${esc(option.id)}" data-sketch-size-price="${esc(option.id)}" type="number" min="1" step="10" value="${Number(prices[option.id] || 0)}">
     `).join('')}
+    <label for="sketch-card-price-size">Show this size price on the sketch card</label>
+    <select id="sketch-card-price-size">${paperSizeOptions().map(option => `<option value="${esc(option.id)}" ${displayedSize?.id === option.id ? 'selected' : ''} ${option.available ? '' : 'disabled'}>${esc(option.label)}${option.available ? '' : ' — Unavailable'}</option>`).join('')}</select>
     <div class="row"><button class="btn" onclick="saveSketchPreset('${id}')">Save</button><button class="btn o" onclick="openS('${id}')">Cancel</button></div>
   `);
 }
@@ -255,30 +258,28 @@ async function saveSketchPreset(id) {
   const item = items.find(sketch => sketch.id === id);
   const title = $('#sketch-edit-title').value.trim();
   const description = $('#sketch-edit-description').value.trim();
-  const displayPrice = $('#sketch-display-price').value.trim();
-  const rawPrice = $('#sketch-order-price').value.trim();
   const category = $('#sketch-edit-category').value;
-  if (!title) return toast('Enter a sketch title');
-  if (displayPrice && (!Number.isFinite(Number(displayPrice)) || Number(displayPrice) < 0)) return toast('Enter a valid card price');
-  if (rawPrice && (!Number.isFinite(Number(rawPrice)) || Number(rawPrice) < 0)) return toast('Enter a valid price');
-  const orderPreset = Object.fromEntries(ORDER_SETTINGS.categories.map(category => [
-    category.id,
-    $(`#preset-${CSS.escape(category.id)}`).value
+  const sizePrices = Object.fromEntries(paperSizeOptions().map(option => [
+    option.id,
+    Number($(`[data-sketch-size-price="${CSS.escape(option.id)}"]`).value)
   ]));
+  const cardPriceSize = $('#sketch-card-price-size').value;
+  if (!title) return toast('Enter a sketch title');
+  if (Object.values(sizePrices).some(amount => !Number.isFinite(amount) || amount < 1)) return toast('Enter a price of at least ₹1 for every paper size');
+  if (!cardPriceSize) return toast('Choose which paper size price to show on the card');
   try {
-    const changes = { title, description, category, displayPrice: displayPrice ? Number(displayPrice) : null, orderPrice: rawPrice ? Number(rawPrice) : null, orderPreset };
+    const changes = { title, description, category, sizePrices, cardPriceSize };
     if (O.sketchEditPhotos) changes.photos = O.sketchEditPhotos;
     await db.collection('gallery').doc(id).update(changes);
     item.title = title;
     item.description = description;
     item.category = category;
     if (O.sketchEditPhotos) item.photos = O.sketchEditPhotos;
-    item.displayPrice = displayPrice ? Number(displayPrice) : null;
-    item.orderPrice = rawPrice ? Number(rawPrice) : null;
-    item.orderPreset = orderPreset;
+    item.sizePrices = sizePrices;
+    item.cardPriceSize = cardPriceSize;
     hide();
     render();
-    toast('Order details and price saved');
+    toast('Sketch details and paper-size prices saved');
   } catch (error) {
     console.error('Could not save sketch order preset:', error);
     toast('Could not save order details');
@@ -399,6 +400,8 @@ function selectSketchPhoto(thumbnail) {
 function addForm() {
   if (!isAdm()) return;
   O.np = [];
+  const initialPrices = paperSizePrices();
+  const defaultCardSize = cardPaperSize({});
 
   const legacyOptions = Object.entries(LEGACY_SKETCHES).map(([id, title]) =>
     `<option value="${id}">${esc(title)}</option>`
@@ -416,6 +419,12 @@ function addForm() {
     <label for="sd">Short description (optional)</label>
     <input id="sd" maxlength="120" placeholder="e.g. Charcoal pencil on paper">
     <label class="feature-choice"><input id="sf-home" type="checkbox"> Show this sketch on the home page</label>
+    ${paperSizeOptions().map(option => `
+      <label for="new-sketch-size-price-${esc(option.id)}">${esc(option.label)} price ₹</label>
+      <input id="new-sketch-size-price-${esc(option.id)}" data-new-sketch-size-price="${esc(option.id)}" type="number" min="1" step="10" value="${Number(initialPrices[option.id] || 0) || ''}">
+    `).join('')}
+    <label for="new-sketch-card-price-size">Show this size price on the sketch card</label>
+    <select id="new-sketch-card-price-size">${paperSizeOptions().map(option => `<option value="${esc(option.id)}" ${defaultCardSize?.id === option.id ? 'selected' : ''} ${option.available ? '' : 'disabled'}>${esc(option.label)}${option.available ? '' : ' — Unavailable'}</option>`).join('')}</select>
     <label for="sl">Link any existing reviews (optional)</label>
     <select id="sl">
       <option value="">This is a new sketch</option>
@@ -460,6 +469,13 @@ async function saveS() {
   const title = $('#st').value.trim();
   if (!title) return toast('Enter a title');
   if (!O.np.length) return toast('Choose at least one photo');
+  const sizePrices = Object.fromEntries(paperSizeOptions().map(option => [
+    option.id,
+    Number($(`[data-new-sketch-size-price="${CSS.escape(option.id)}"]`).value)
+  ]));
+  const cardPriceSize = $('#new-sketch-card-price-size').value;
+  if (Object.values(sizePrices).some(amount => !Number.isFinite(amount) || amount < 1)) return toast('Enter a price of at least ₹1 for every paper size');
+  if (!cardPriceSize) return toast('Choose which paper size price to show on the card');
 
   const button = document.querySelector('.form-actions .btn');
   button.disabled = true;
@@ -470,6 +486,8 @@ async function saveS() {
       category: $('#sc').value,
       description: $('#sd').value.trim(),
       photos: O.np,
+      sizePrices,
+      cardPriceSize,
       featured: $('#sf-home').checked,
       displayOrder: items.filter(item => item.category === $('#sc').value)
         .reduce((highest, item) => Math.max(highest, Number.isFinite(item.displayOrder) ? item.displayOrder : -1), -1) + 1,

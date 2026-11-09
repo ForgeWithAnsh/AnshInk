@@ -97,9 +97,11 @@ function view(id) {
       <img class="oimg" src="${order.done || order.photo}" alt="">
       <div class="mu">Sketch ID ${esc(order.id)} · ordered ${new Date(order.at).toLocaleDateString('en-IN')}</div>
       <p>
-        ${esc(order.subj || 'Person')} · ${esc(order.style || 'Realistic')}<br>
+        ${order.sourceType === 'shop' || order.sourceType === 'gallery'
+          ? esc(order.subj || (order.sourceType === 'shop' ? 'InkShop design' : 'Gallery sketch'))
+          : `${esc(order.subj || 'Person')} · ${esc(order.style || 'Realistic')}`}<br>
         Paper: ${esc(order.size || '')}<br>
-        People: ${order.ppl} · Detail items: ${order.items || 0}<br>
+        ${order.sourceType === 'shop' || order.sourceType === 'gallery' ? '' : `People: ${order.ppl} · Detail items: ${order.items || 0}<br>`}
         Material: charcoal pencils
       </p>
       <p>${amountSummary}</p>

@@ -1,9 +1,13 @@
 /* Sketch order form: design, customer details, review, and submit. */
-const price = order => order.fixedPrice != null
-  ? Number(order.fixedPrice)
+const isSizePricedOrder = order => order.sourceType === 'gallery' || order.sourceType === 'shop';
+const price = order => isSizePricedOrder(order)
+  ? Number(order.sizePrices?.[order.selections?.[paperSizeCategory()?.id]] || 0)
   : orderOptionPrice(order.selections, order.priceBaseline, order.priceBase ?? ORDER_SETTINGS.basePrice);
 
 const selectedLabel = (order, key) => optionById(key, order.selections?.[key])?.label || '';
+const orderCategoriesFor = order => isSizePricedOrder(order)
+  ? [paperSizeCategory()].filter(Boolean)
+  : ORDER_SETTINGS.categories;
 
 function showOrderStep(content) {
   $('#ordpage').innerHTML = `<div class="box">${content}</div>`;
@@ -51,10 +55,13 @@ async function startOrder() {
         shopProductId: shopId,
         title: product.title,
         photo: product.image,
-        fixedPrice: Number(product.price),
+        sizePrices: paperSizePrices(product, Number(product.price) || 0, product.cardPriceSize || ''),
         pinterestUrl: product.pinterestUrl || '',
         shopDescription: product.description || ''
       });
+      const sizeCategory = paperSizeCategory();
+      const chosenSize = cardPaperSize(product);
+      if (sizeCategory && chosenSize) O.order.selections = { [sizeCategory.id]: chosenSize.id };
     } catch (error) {
       console.error('Could not load InkShop product:', error);
       showOrderStep('<h2>InkShop item unavailable</h2><p class="mu">This item may have been removed. Please return to InkShop and choose another design.</p><a class="btn" href="shop.html">Open InkShop</a>');
@@ -69,13 +76,10 @@ async function startOrder() {
       O.order.gallerySketchId = sketchId;
       O.order.title = `Sketch like ${sketch.title || 'this'}`;
       O.order.photo = (sketch.photos || [sketch.photo]).filter(Boolean)[0] || '';
-      const hasSpecificPrice = Number.isFinite(Number(sketch.orderPrice)) && sketch.orderPrice !== null;
-      O.order.priceBase = hasSpecificPrice ? Number(sketch.orderPrice) : ORDER_SETTINGS.basePrice;
-      O.order.priceBaseline = hasSpecificPrice ? (sketch.orderPreset || {}) : null;
-      O.order.selections = { ...selections };
-      Object.entries(sketch.orderPreset || {}).forEach(([categoryId, optionId]) => {
-        if (optionById(categoryId, optionId)?.available) O.order.selections[categoryId] = optionId;
-      });
+      O.order.sizePrices = paperSizePrices(sketch);
+      const sizeCategory = paperSizeCategory();
+      const chosenSize = cardPaperSize(sketch);
+      if (sizeCategory && chosenSize) O.order.selections = { [sizeCategory.id]: chosenSize.id };
     } catch (error) {
       console.error('Could not load sketch preset:', error);
       toast('Could not load this sketch preset. Please try again.');
@@ -97,6 +101,23 @@ function optionCards(category, order) {
   `;
 }
 
+function paperSizeCards(order) {
+  const category = paperSizeCategory();
+  if (!category) return '<p class="mu">Paper size options are not configured yet.</p>';
+  const selectedId = order.selections[category.id];
+  return `
+    <label>${esc(category.label)}</label>
+    <div class="opt">
+      ${category.options.map(option => `
+        <button class="${selectedId === option.id ? 'on' : ''} ${option.available ? '' : 'unavailable'}"
+          ${option.available ? `onclick="O.order.selections['${esc(category.id)}']='${esc(option.id)}';showDesignStep()"` : 'disabled'}>
+          ${esc(option.label)}<br><span class="mu">${option.available ? `₹${Number(order.sizePrices?.[option.id] || 0).toLocaleString('en-IN')}` : 'Unavailable'}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
 function showDesignStep() {
   const order = O.order;
   if (order.sourceType === 'shop') {
@@ -107,6 +128,7 @@ function showDesignStep() {
       <p class="mu">${esc(order.shopDescription || '')}</p>
       <p>${esc(SITE.shopNotice)}</p>
       ${order.pinterestUrl ? `<a href="${esc(order.pinterestUrl)}" target="_blank" rel="noopener">Open this reference on Pinterest</a>` : ''}
+      ${paperSizeCards(order)}
       <div class="tot">₹${price(order).toLocaleString('en-IN')}</div>
       <div class="row order-actions"><button class="btn" onclick="showDetailsStep()">Next</button><a class="btn o" href="${PG('shop')}">Cancel</a></div>
     `);
@@ -115,8 +137,7 @@ function showDesignStep() {
   const sketchPreset = order.sourceType === 'gallery';
   showOrderStep(`
     <h2>${sketchPreset ? 'Order this sketch style' : 'Design your sketch'}</h2>
-    ${sketchPreset ? `<p class="mu">The sketch details and price are preselected. You can continue as-is or change an available option.</p><img class="pre" src="${esc(order.photo)}" alt="Sketch reference">` : ''}
-    ${ORDER_SETTINGS.categories.map(category => `<label>${esc(category.label)}</label>${optionCards(category, order)}`).join('')}
+    ${sketchPreset ? `<p class="mu">Choose a paper size. The price updates for the selected size.</p><img class="pre" src="${esc(order.photo)}" alt="Sketch reference">${paperSizeCards(order)}` : ORDER_SETTINGS.categories.map(category => `<label>${esc(category.label)}</label>${optionCards(category, order)}`).join('')}
     <p class="mu">
       ${esc(SITE.orderNotice || 'Delivery charges are confirmed after you order. The final price is confirmed before I start.')}
     </p>
@@ -227,19 +248,24 @@ function showReviewStep() {
     return toast('Fill name, 10-digit mobile, address and 6-digit pincode');
   }
 
+  const orderCategories = orderCategoriesFor(order);
+  const orderSummary = orderCategories.map(category => `${category.label}: ${selectedLabel(order, category.id)}`).filter(Boolean);
+
   showOrderStep(`
     <h2>Review &amp; send</h2>
     <p>
       ${esc(order.title || ORDER_SETTINGS.categories.map(category => selectedLabel(order, category.id)).filter(Boolean).join(' · '))}<br>
-      ${order.sourceType === 'shop' ? `<span class="mu">Pinterest reference · ${esc(order.shopDescription || '')}</span><br>` : `<span class="mu">${esc(ORDER_SETTINGS.categories.map(category => `${category.label}: ${selectedLabel(order, category.id)}`).filter(Boolean).join(' · '))}</span><br>`}
+      ${order.sourceType === 'shop' ? `<span class="mu">Pinterest reference · ${esc(order.shopDescription || '')}</span><br><span class="mu">${esc(orderSummary.join(' · '))}</span><br>` : `<span class="mu">${esc(orderSummary.join(' · '))}</span><br>`}
       <span class="mu">${esc(order.name)}, ${esc(order.address)} – ${esc(order.pincode)}</span>
     </p>
-    <div class="tot">${order.fixedPrice != null ? 'Price' : 'Estimate'} ₹${price(order).toLocaleString('en-IN')}</div>
+    <div class="tot">${isSizePricedOrder(order) ? 'Price' : 'Estimate'} ₹${price(order).toLocaleString('en-IN')}</div>
     <div class="mu">
       + delivery charges.
       ${order.sourceType === 'shop'
         ? '<b>This Pinterest reference will be made into a hand-drawn sketch.</b> Delivery charges will be confirmed before payment.'
-        : '<b>Your photo will be checked, and the final price and delivery charge will be confirmed.</b> Once the order is accepted, a Pay button will appear in ‘My orders’.'}
+        : order.sourceType === 'gallery'
+          ? '<b>The selected paper size price is shown above.</b> Delivery charges will be confirmed before payment.'
+          : '<b>Your photo will be checked, and the final price and delivery charge will be confirmed.</b> Once the order is accepted, a Pay button will appear in ‘My orders’.'}
     </div>
     <div class="row order-actions">
       <button class="btn" onclick="placeOrder()">Send order request</button>
@@ -257,24 +283,27 @@ async function placeOrder() {
       const snapshot = await transaction.get(counter);
       const nextNumber = (snapshot.exists ? snapshot.data().value || 0 : 0) + 1;
       const orderId = String(nextNumber).padStart(4, '0');
+      const orderCategories = orderCategoriesFor(order);
       const orderData = {
         ...order,
         title: order.title || ORDER_SETTINGS.categories.map(category => selectedLabel(order, category.id)).filter(Boolean).join(' '),
-        subj: selectedLabel(order, 'subject') || 'Person',
-        style: selectedLabel(order, 'style') || 'Realistic',
-        size: selectedLabel(order, 'size'),
-        ppl: Number(order.selections?.people || 1),
-        items: Number(order.selections?.details || 0),
+        subj: isSizePricedOrder(order) ? (order.sourceType === 'shop' ? 'InkShop design' : 'Gallery sketch') : (selectedLabel(order, 'subject') || 'Person'),
+        style: isSizePricedOrder(order) ? '' : (selectedLabel(order, 'style') || 'Realistic'),
+        size: selectedLabel(order, paperSizeCategory()?.id || 'size'),
+        ppl: isSizePricedOrder(order) ? 1 : Number(order.selections?.people || 1),
+        items: isSizePricedOrder(order) ? 0 : Number(order.selections?.details || 0),
         id: orderId,
         uid: me.id,
         email: me.email,
         amount: price(order),
         selections: order.selections || {},
-        optionSummary: ORDER_SETTINGS.categories.map(category => `${category.label}: ${selectedLabel(order, category.id)}`).filter(Boolean),
-        optionPrices: ORDER_SETTINGS.categories.map(category => ({
+        optionSummary: orderCategories.map(category => `${category.label}: ${selectedLabel(order, category.id)}`).filter(Boolean),
+        optionPrices: orderCategories.map(category => ({
           category: category.label,
           option: selectedLabel(order, category.id),
-          priceChange: optionById(category.id, order.selections?.[category.id])?.price || 0
+          priceChange: isSizePricedOrder(order)
+            ? price(order)
+            : (optionById(category.id, order.selections?.[category.id])?.price || 0)
         })),
         st: 0,
         at: TS()

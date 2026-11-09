@@ -31,6 +31,7 @@ function renderShop() {
   const visible = shopProducts.filter(product => selectedShopCategory === 'All' || product.category === selectedShopCategory);
   shopList.innerHTML = visible.length ? visible.map((product, index) => {
     const pinUrl = safeExternalUrl(product.pinterestUrl || '');
+    const cardPrice = cardPaperPrice(product, 'shop');
     return `
       <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" style="--shop-index:${Math.min(index, 8)}">
         <img src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}" loading="lazy">
@@ -39,7 +40,7 @@ function renderShop() {
           ${product.active === false ? '<span class="badge bad">Hidden</span>' : ''}
           <h2>${esc(product.title || 'Sketch design')}</h2>
           <p>${esc(product.description || '')}</p>
-          <div class="shop-price">₹${Number(product.price || 0).toLocaleString('en-IN')}</div>
+          <div class="shop-price">${esc(cardPrice.size?.label || 'Paper size')} · ₹${cardPrice.price.toLocaleString('en-IN')}</div>
           <div class="row">
             <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
             ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}

@@ -160,6 +160,8 @@ async function loadGallery() {
       const data = doc.data();
       return {
         id: doc.id,
+        sizePrices: data.sizePrices || {},
+        cardPriceSize: data.cardPriceSize || '',
         featured: data.featured === true,
         orderPrice: data.orderPrice == null ? null : Number(data.orderPrice),
         displayPrice: data.displayPrice == null ? null : Number(data.displayPrice),
@@ -208,10 +210,10 @@ async function loadGallery() {
             <span class="st" id="st-${sketch.id}"></span>
             <span class="mu" id="rc-${sketch.id}"></span>
           </div>
-          ${sketch.displayPrice != null ? `<div class="card-display-price">Gallery price: ₹${sketch.displayPrice.toLocaleString('en-IN')}</div>` : ''}
+          ${renderHomeSketchCardPrice(sketch)}
           <div class="row">
             <button class="btn o sm" onclick="openRev('${sketch.id}')">Reviews &amp; rate</button>
-            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this${sketch.orderPrice != null ? ` · ₹${sketch.orderPrice.toLocaleString('en-IN')}` : ''}</a>
+            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this</a>
           </div>
         </div>
       </article>
@@ -223,6 +225,12 @@ async function loadGallery() {
     console.error('Could not load gallery:', error);
     grid.innerHTML = '<p class="mu gallery-empty">Could not load sketches right now.</p>';
   }
+}
+
+function renderHomeSketchCardPrice(sketch) {
+  const { size, price: amount } = cardPaperPrice(sketch);
+  if (!size) return '';
+  return `<div class="card-display-price">${esc(size.label)} · ₹${amount.toLocaleString('en-IN')}</div>`;
 }
 
 function selectHomePhoto(thumbnail) {

@@ -248,6 +248,9 @@ async function saveOrderSettings() {
   if (draft.categories.some(category => !category.label || !category.options.length || !category.options.some(option => option.available && option.label))) {
     return toast('Each category needs a name and at least one available option');
   }
+  if (!draft.categories.some(category => category.id === 'size' && category.options.some(option => option.available))) {
+    return toast('Keep at least one available option in the Paper size category. Sketch and InkShop orders need it.');
+  }
   if (draft.categories.some(category => category.options.some(option => !option.label))) return toast('Every option needs a name');
   try {
     const savedSettings = normalizeOrderSettings(draft);
@@ -265,11 +268,11 @@ async function saveOrderSettings() {
 function renderShopAdmin() {
   const content = $('#admin-section');
   content.innerHTML = `
-    <div class="admin-shop-heading"><div><h2>InkShop products</h2><p class="mu">Add a reference image you uploaded, its Pinterest link and the fixed price.</p></div><button class="btn" onclick="showShopProductForm()">+ Add InkShop card</button></div>
+    <div class="admin-shop-heading"><div><h2>InkShop products</h2><p class="mu">Add a reference image, its Pinterest link, and a price for each paper size.</p></div><button class="btn" onclick="showShopProductForm()">+ Add InkShop card</button></div>
     ${adminShopItems.length ? `<div class="admin-shop-grid">${adminShopItems.map(item => `
       <article class="admin-shop-card">
         <img src="${esc(item.image || '')}" alt="">
-        <div><b>${esc(item.title || 'Untitled')}</b><div class="mu">${esc(item.category || '')} · ₹${Number(item.price || 0).toLocaleString('en-IN')} · ${item.active === false ? 'Hidden' : 'Published'}</div></div>
+        <div><b>${esc(item.title || 'Untitled')}</b><div class="mu">${esc(item.category || '')} · ${esc(cardPaperPrice(item, 'shop').size?.label || 'Paper size')} ₹${cardPaperPrice(item, 'shop').price.toLocaleString('en-IN')} · ${item.active === false ? 'Hidden' : 'Published'}</div></div>
         <div class="row"><button class="btn o sm" onclick="showShopProductForm('${item.id}')">Edit</button><button class="btn o sm" onclick="deleteShopProduct('${item.id}')">Delete</button></div>
       </article>
     `).join('')}</div>` : '<p class="mu">No InkShop cards yet.</p>'}
@@ -279,13 +282,20 @@ function renderShopAdmin() {
 function showShopProductForm(id = '') {
   const product = adminShopItems.find(item => item.id === id) || {};
   const categories = [...new Set([...(SITE.shopCategories || []), product.category].filter(Boolean))];
+  const prices = id ? paperSizePrices(product, Number(product.price) || 0, product.cardPriceSize || '') : {};
+  const displayedSize = cardPaperSize(product);
   O.shopPhoto = product.image || '';
   show(`
     <h2>${id ? 'Edit' : 'Add'} InkShop card</h2>
     <label for="shop-title">Name</label><input id="shop-title" maxlength="80" value="${esc(product.title || '')}">
     <label for="shop-category">Category</label><select id="shop-category">${categories.map(category => `<option ${product.category === category ? 'selected' : ''}>${esc(category)}</option>`).join('')}</select>
     <label for="shop-description">Description</label><textarea id="shop-description" rows="3" maxlength="500">${esc(product.description || '')}</textarea>
-    <label for="shop-price">Price ₹</label><input id="shop-price" type="number" min="1" step="10" value="${Number(product.price) || ''}">
+    ${paperSizeOptions().map(option => `
+      <label for="shop-size-price-${esc(option.id)}">${esc(option.label)} price ₹</label>
+      <input id="shop-size-price-${esc(option.id)}" data-shop-size-price="${esc(option.id)}" type="number" min="1" step="10" value="${Number(prices[option.id] || 0) || ''}">
+    `).join('')}
+    <label for="shop-card-price-size">Show this size price on the InkShop card</label>
+    <select id="shop-card-price-size">${paperSizeOptions().map(option => `<option value="${esc(option.id)}" ${displayedSize?.id === option.id ? 'selected' : ''} ${option.available ? '' : 'disabled'}>${esc(option.label)}${option.available ? '' : ' — Unavailable'}</option>`).join('')}</select>
     <label for="shop-pinterest">Exact Pinterest URL</label><input id="shop-pinterest" type="url" value="${esc(product.pinterestUrl || '')}" placeholder="https://www.pinterest.com/pin/...">
     <label for="shop-image">Reference image (upload a copy you may display)</label><input id="shop-image" type="file" accept="image/*" onchange="pickShopImage(this)">
     <img class="pre" id="shop-image-preview" src="${esc(product.image || '')}" alt="Image preview" ${product.image ? '' : 'hidden'}>
@@ -306,9 +316,15 @@ function pickShopImage(input) {
 async function saveShopProduct(id) {
   if (!isAdm()) return;
   const title = $('#shop-title').value.trim();
-  const price = Number($('#shop-price').value);
+  const sizePrices = Object.fromEntries(paperSizeOptions().map(option => [
+    option.id,
+    Number($(`[data-shop-size-price="${CSS.escape(option.id)}"]`).value)
+  ]));
+  const cardPriceSize = $('#shop-card-price-size').value;
   const pinterestUrl = $('#shop-pinterest').value.trim();
-  if (!title || !price || price < 1) return toast('Enter a title and a price greater than zero');
+  if (!title) return toast('Enter a title');
+  if (Object.values(sizePrices).some(amount => !Number.isFinite(amount) || amount < 1)) return toast('Enter a price of at least ₹1 for every paper size');
+  if (!cardPriceSize) return toast('Choose which paper size price to show on the card');
   if (!O.shopPhoto) return toast('Upload a reference image');
   if (pinterestUrl) {
     try {
@@ -324,7 +340,9 @@ async function saveShopProduct(id) {
     title,
     category: $('#shop-category').value,
     description: $('#shop-description').value.trim(),
-    price,
+    price: sizePrices[cardPriceSize],
+    sizePrices,
+    cardPriceSize,
     image: O.shopPhoto,
     pinterestUrl,
     active: $('#shop-active').checked,

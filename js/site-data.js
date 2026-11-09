@@ -153,3 +153,55 @@ function defaultOrderSelections() {
     return [category.id, available?.id || ''];
   }));
 }
+
+function paperSizeCategory() {
+  return ORDER_SETTINGS.categories.find(category => category.id === 'size')
+    || ORDER_SETTINGS.categories.find(category => /paper\s*size/i.test(category.label));
+}
+
+function paperSizeOptions() {
+  return paperSizeCategory()?.options || [];
+}
+
+function paperSizePrices(item = {}, fallbackBase = null, fallbackSizeId = '') {
+  const category = paperSizeCategory();
+  const options = category?.options || [];
+  if (!category || !options.length) return {};
+
+  const selections = defaultOrderSelections();
+  const baseSizeId = fallbackSizeId
+    || item.orderPreset?.[category.id]
+    || selections[category.id]
+    || options.find(option => option.available)?.id;
+  const baseOption = options.find(option => option.id === baseSizeId) || options[0];
+  const oldBase = fallbackBase !== null && fallbackBase !== '' && Number.isFinite(Number(fallbackBase))
+    ? Number(fallbackBase)
+    : (item.orderPrice != null ? Number(item.orderPrice) : orderOptionPrice(selections));
+  const storedPrices = item.sizePrices || {};
+
+  return Object.fromEntries(options.map(option => {
+    const saved = Number(storedPrices[option.id]);
+    const amount = Number.isFinite(saved)
+      ? saved
+      : Math.max(0, oldBase + Number(option.price || 0) - Number(baseOption?.price || 0));
+    return [option.id, amount];
+  }));
+}
+
+function cardPaperSize(item = {}) {
+  const options = paperSizeOptions();
+  const categoryId = paperSizeCategory()?.id;
+  const requested = item.cardPriceSize
+    || item.orderPreset?.[categoryId]
+    || defaultOrderSelections()[categoryId];
+  return options.find(option => option.id === requested && option.available)
+    || options.find(option => option.available)
+    || options[0];
+}
+
+function cardPaperPrice(item = {}, type = 'gallery') {
+  const defaultBase = type === 'shop' ? Number(item.price) || 0 : null;
+  const prices = paperSizePrices(item, defaultBase, item.cardPriceSize || '');
+  const size = cardPaperSize(item);
+  return { size, price: size ? Number(prices[size.id] || 0) : 0 };
+}

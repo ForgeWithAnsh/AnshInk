@@ -108,13 +108,15 @@ function renderOrder(order) {
         <img class="admin-thumb" src="${order.done || order.photo || ''}" alt="">
         <div>
           <b>Sketch #${sketchId} · ${esc(order.title || 'Untitled sketch')}</b>
-          <div class="mu">${esc(order.name || '')} · ${esc(order.size || '')} · Estimate ${rs(order.amt)}</div>
+          <div class="mu">${esc(order.name || '')} · ${esc(order.size || '')} · ${order.sourceType === 'shop' || order.sourceType === 'gallery' ? 'Price' : 'Estimate'} ${rs(order.amt)}</div>
           <span class="badge ${order.st < 0 ? 'bad' : ''}">${stl(order)}</span>
         </div>
       </summary>
       <div class="ord-body">
         <p class="mu">
-          ${esc(order.subj || 'Person')} · ${esc(order.style || 'Realistic')} · ${order.ppl} person(s) · ${order.items || 0} detail items<br>
+          ${order.sourceType === 'shop' || order.sourceType === 'gallery'
+            ? `${esc(order.subj || (order.sourceType === 'shop' ? 'InkShop design' : 'Gallery sketch'))} · ${esc(order.size || '')}`
+            : `${esc(order.subj || 'Person')} · ${esc(order.style || 'Realistic')} · ${order.ppl} person(s) · ${order.items || 0} detail items`}<br>
           ${(order.optionSummary || []).map(entry => esc(entry)).join(' · ')}<br>
           ${order.sourceType === 'shop' ? `InkShop reference · <a href="${esc(order.pinterestUrl || '#')}" target="_blank" rel="noopener">Pinterest source</a><br>` : ''}
           ${esc(order.name)}, ${esc(order.phone)}<br>
