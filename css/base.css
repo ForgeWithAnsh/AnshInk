@@ -28,7 +28,7 @@ nav{display:flex;gap:6px;align-items:center}nav>a{color:var(--tx);text-decoratio
 .btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px #5c3f2b66}.btn:active{transform:scale(.97)}
 .btn.o{background:none;color:var(--ac);border:1px solid var(--ac);box-shadow:none}
 .btn.sm{padding:5px 10px;font-size:14px}.btn.big{padding:13px 24px;font-size:17px;border-radius:30px}
-.btn.order-cta{background:linear-gradient(135deg,#e07835,#c24f2b);font-weight:700;box-shadow:0 5px 16px #96371f55}
+.btn.order-cta{background:linear-gradient(135deg,#846345,var(--ac));color:#fffaf1;font-weight:700;box-shadow:0 5px 16px #6b4a3455}.btn.order-cta:hover{background:linear-gradient(135deg,#735437,#523824);box-shadow:0 7px 18px #52382466}
 
 /* forms, modal, cards */
 label{display:block;margin:10px 0 4px;font-size:14px;color:var(--mu)}

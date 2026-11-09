@@ -87,3 +87,10 @@
     height: min(70vw, 300px);
   }
 }
+
+/* Let review cards flow at different heights like a Pinterest feed. */
+.review-grid{display:block;column-count:3;column-gap:18px}
+.review-card{display:inline-block;width:100%;margin:0 0 18px;break-inside:avoid;vertical-align:top}
+.review-sketch-photo{height:auto;max-height:360px;aspect-ratio:auto;object-fit:contain}
+@media(max-width:900px){.review-grid{display:block;column-count:2;column-gap:14px}}
+@media(max-width:600px){.review-grid{display:block;column-count:2;column-gap:10px}.review-card{margin-bottom:10px}.review-card-body{padding:9px}.review-card-actions{gap:5px}.review-card-actions .btn{font-size:12px;padding:4px 7px}.review-sketch-photo{height:auto;max-height:none;aspect-ratio:auto}}
