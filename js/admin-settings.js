@@ -282,8 +282,8 @@ function renderShopAdmin() {
 function showShopProductForm(id = '') {
   const product = adminShopItems.find(item => item.id === id) || {};
   const categories = [...new Set([...(SITE.shopCategories || []), product.category].filter(Boolean))];
-  const prices = id ? paperSizePrices(product, Number(product.price) || 0, product.cardPriceSize || '') : {};
-  const displayedSize = cardPaperSize(product);
+  const prices = id ? paperSizePrices(product, Number(product.price) || 0, product.cardPriceSize || '') : suggestedPaperSizePrices();
+  const displayedSize = id ? cardPaperSize(product) : defaultCardPaperSize();
   O.shopPhoto = product.image || '';
   show(`
     <h2>${id ? 'Edit' : 'Add'} InkShop card</h2>

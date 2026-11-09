@@ -189,7 +189,7 @@ async function loadGallery() {
     }
 
     grid.innerHTML = sketches.map(sketch => `
-      <article class="card rv" onclick="openHomeSketch('${sketch.id}')">
+      <article class="card rv">
         <img class="main" src="${photoUrl(sketch.photos[0])}" alt="${esc(sketch.title)}" loading="lazy">
         ${sketch.photos.length > 1 ? `
           <div class="th">
@@ -197,7 +197,7 @@ async function loadGallery() {
               <img
                 src="${photoUrl(photo)}"
                 class="${index ? '' : 'on'}"
-                onclick="event.stopPropagation();selectHomePhoto(this)"
+                onclick="selectHomePhoto(this)"
                 alt=""
               >
             `).join('')}
@@ -212,8 +212,8 @@ async function loadGallery() {
           </div>
           ${renderHomeSketchCardPrice(sketch)}
           <div class="row">
-            <button class="btn o sm" onclick="event.stopPropagation();openRev('${sketch.id}')">Reviews &amp; rate</button>
-            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}" onclick="event.stopPropagation()">Order like this</a>
+            <button class="btn o sm" onclick="openRev('${sketch.id}')">Reviews &amp; rate</button>
+            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this</a>
           </div>
         </div>
       </article>
@@ -231,32 +231,6 @@ function renderHomeSketchCardPrice(sketch) {
   const { size, price: amount } = cardPaperPrice(sketch);
   if (!size) return '';
   return `<div class="card-display-price">${esc(size.label)} · ₹${amount.toLocaleString('en-IN')}</div>`;
-}
-
-function openHomeSketch(id) {
-  const sketch = sketches.find(item => item.id === id);
-  if (!sketch) return;
-  const { size, price: amount } = cardPaperPrice(sketch);
-  show(`
-    <h2>${esc(sketch.title)}</h2>
-    <img class="home-sketch-detail-image" src="${photoUrl(sketch.photos[0])}" alt="${esc(sketch.title)}">
-    ${sketch.photos.length > 1 ? `<div class="sth">${sketch.photos.map((photo, index) => `<img src="${photoUrl(photo)}" class="${index ? '' : 'on'}" onclick="selectHomeDetailPhoto(this)" alt="">`).join('')}</div>` : ''}
-    <p>${esc(sketch.description || '')}</p>
-    <div class="card-rating"><span class="st">${stars(averageRating(sketch))}</span><span class="mu">${reviewsFor(sketch).length ? ` ${averageRating(sketch).toFixed(1)} · ${reviewsFor(sketch).length} review${reviewsFor(sketch).length === 1 ? '' : 's'}` : ' No ratings yet'}</span></div>
-    <div class="card-display-price">${esc(size?.label || 'Paper size')} · ₹${amount.toLocaleString('en-IN')}</div>
-    <div class="row">
-      <button class="btn o" onclick="openRev('${sketch.id}')">Reviews &amp; rate</button>
-      <a class="btn" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this</a>
-      <button class="btn o" onclick="hide()">Close</button>
-    </div>
-  `);
-}
-
-function selectHomeDetailPhoto(thumbnail) {
-  const modalImage = $('.home-sketch-detail-image');
-  if (modalImage) modalImage.src = thumbnail.src;
-  thumbnail.parentNode.querySelectorAll('img').forEach(image => image.classList.remove('on'));
-  thumbnail.classList.add('on');
 }
 
 function selectHomePhoto(thumbnail) {

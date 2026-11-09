@@ -400,8 +400,8 @@ function selectSketchPhoto(thumbnail) {
 function addForm() {
   if (!isAdm()) return;
   O.np = [];
-  const initialPrices = paperSizePrices();
-  const defaultCardSize = cardPaperSize({});
+  const initialPrices = suggestedPaperSizePrices();
+  const defaultCardSize = defaultCardPaperSize();
 
   const legacyOptions = Object.entries(LEGACY_SKETCHES).map(([id, title]) =>
     `<option value="${id}">${esc(title)}</option>`

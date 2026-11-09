@@ -163,6 +163,19 @@ function paperSizeOptions() {
   return paperSizeCategory()?.options || [];
 }
 
+function suggestedPaperSizePrices() {
+  const amountsBySize = { a5: 199, a4: 399, a3: 699 };
+  return Object.fromEntries(paperSizeOptions().map(option => {
+    const sizeCode = `${option.id} ${option.label}`.match(/a[345]/i)?.[0].toLowerCase();
+    return [option.id, amountsBySize[sizeCode] ?? ''];
+  }));
+}
+
+function defaultCardPaperSize() {
+  return paperSizeOptions().find(option => option.available && /a5/i.test(`${option.id} ${option.label}`))
+    || cardPaperSize({});
+}
+
 function paperSizePrices(item = {}, fallbackBase = null, fallbackSizeId = '') {
   const category = paperSizeCategory();
   const options = category?.options || [];
