@@ -51,7 +51,7 @@ input,select,textarea{width:100%;padding:10px;border:1px solid var(--ln);border-
 #page-loading.done{opacity:0;visibility:hidden}
 .loading-spinner{width:15px;height:15px;border:2px solid var(--ln);border-top-color:var(--ac);border-radius:50%;animation:loadspin .7s linear infinite}
 @keyframes loadspin{to{transform:rotate(360deg)}}
-#ftr{margin-top:auto}footer{text-align:center;padding:24px 16px;color:var(--mu);border-top:1px solid var(--ln);margin-top:0}footer a{color:var(--ac)}
+#ftr{margin-top:auto}footer{text-align:center;padding:24px 16px;color:var(--mu);border-top:1px solid var(--ln);margin-top:0}footer a{color:var(--ac)}.footer-contact{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:5px}.footer-contact span{white-space:nowrap}
 
 /* reveal-on-scroll (fade in + slide up) */
 .rv{opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease}.rv.in{opacity:1;transform:none}
