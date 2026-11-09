@@ -189,7 +189,7 @@ async function loadGallery() {
     }
 
     grid.innerHTML = sketches.map(sketch => `
-      <article class="card rv">
+      <article class="card rv" onclick="openHomeSketch('${sketch.id}')">
         <img class="main" src="${photoUrl(sketch.photos[0])}" alt="${esc(sketch.title)}" loading="lazy">
         ${sketch.photos.length > 1 ? `
           <div class="th">
@@ -197,7 +197,7 @@ async function loadGallery() {
               <img
                 src="${photoUrl(photo)}"
                 class="${index ? '' : 'on'}"
-                onclick="selectHomePhoto(this)"
+                onclick="event.stopPropagation();selectHomePhoto(this)"
                 alt=""
               >
             `).join('')}
@@ -205,21 +205,15 @@ async function loadGallery() {
         ` : ''}
         <div class="cb">
           <h3>${esc(sketch.title)}</h3>
-          <div class="mu">${esc(sketch.description)}</div>
-          <div class="row card-rating">
-            <span class="st" id="st-${sketch.id}"></span>
-            <span class="mu" id="rc-${sketch.id}"></span>
-          </div>
           ${renderHomeSketchCardPrice(sketch)}
           <div class="row">
-            <button class="btn o sm" onclick="openRev('${sketch.id}')">Reviews &amp; rate</button>
-            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this</a>
+            <button class="btn o sm" onclick="event.stopPropagation();openRev('${sketch.id}')">Reviews &amp; rate</button>
+            <a class="btn sm" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}" onclick="event.stopPropagation()">Order like this</a>
           </div>
         </div>
       </article>
     `).join('');
 
-    ratings();
     reveal();
   } catch (error) {
     console.error('Could not load gallery:', error);
@@ -231,6 +225,40 @@ function renderHomeSketchCardPrice(sketch) {
   const { size, price: amount } = cardPaperPrice(sketch);
   if (!size) return '';
   return `<div class="card-display-price">${esc(size.label)} · ₹${amount.toLocaleString('en-IN')}</div>`;
+}
+
+function openHomeSketch(id) {
+  const sketch = sketches.find(item => item.id === id);
+  if (!sketch) return;
+  show(`
+    <h2>${esc(sketch.title)}</h2>
+    <img class="home-detail-image" id="home-detail-image" src="${photoUrl(sketch.photos[0])}" alt="${esc(sketch.title)}">
+    ${sketch.photos.length > 1 ? `
+      <div class="home-detail-thumbnails">
+        ${sketch.photos.map((photo, index) => `<img src="${photoUrl(photo)}" class="${index ? '' : 'on'}" onclick="selectHomeDetailPhoto(this)" alt="Photo ${index + 1} of ${esc(sketch.title)}">`).join('')}
+      </div>
+    ` : ''}
+    <p class="mu">${esc(sketch.description || '')}</p>
+    <div class="sketch-detail-rating">${homeRatingSummary(sketch)}</div>
+    <div class="row">
+      <a class="btn cta" href="${PG('order')}?sketch=${encodeURIComponent(sketch.id)}">Order like this</a>
+      <button class="btn o" onclick="openRev('${sketch.id}')">Reviews &amp; rate</button>
+      <button class="btn o" onclick="hide()">Close</button>
+    </div>
+  `);
+}
+
+function selectHomeDetailPhoto(thumbnail) {
+  $('#home-detail-image').src = thumbnail.src;
+  thumbnail.parentNode.querySelectorAll('img').forEach(image => image.classList.remove('on'));
+  thumbnail.classList.add('on');
+}
+
+function homeRatingSummary(sketch) {
+  const reviews = reviewsFor(sketch);
+  if (!reviews.length) return '<span class="mu">No ratings yet</span>';
+  const average = averageRating(sketch);
+  return `<span class="st">${stars(average)}</span> <span class="mu">${average.toFixed(1)} · ${reviews.length} review${reviews.length === 1 ? '' : 's'}</span>`;
 }
 
 function selectHomePhoto(thumbnail) {
@@ -248,17 +276,6 @@ function averageRating(sketch) {
   const reviews = reviewsFor(sketch);
   if (!reviews.length) return 0;
   return reviews.reduce((total, review) => total + review.s, 0) / reviews.length;
-}
-
-function ratings() {
-  sketches.forEach(sketch => {
-    const reviews = reviewsFor(sketch);
-    const average = averageRating(sketch);
-    $(`#st-${sketch.id}`).textContent = stars(average);
-    $(`#rc-${sketch.id}`).textContent = reviews.length
-      ? `${average.toFixed(1)} (${reviews.length})`
-      : 'No ratings yet';
-  });
 }
 
 async function loadReviews() {
@@ -279,7 +296,6 @@ async function loadReviews() {
     console.error('Could not load sketch reviews:', error);
   }
 
-  ratings();
 }
 
 function openRev(id) {
@@ -290,16 +306,16 @@ function openRev(id) {
   O.rs = 5;
 
   show(`
-    <h2>${esc(sketch.title)}</h2>
-    <div class="st">${stars(averageRating(sketch))}</div>
-    <div>
+    <h2>${esc(sketch.title)} · Reviews</h2>
+    <div class="sketch-detail-rating">${homeRatingSummary(sketch)}</div>
+    <div class="sketch-reviews-list">
       ${reviews.length ? reviews.slice().reverse().map(review => `
-        <div class="rev">
-          <b>${esc(review.n)}</b>
-          <span class="st">${stars(review.s)}</span>
-          <div>${esc(review.x)}</div>
+        <article class="sketch-review">
+          <b>${esc(review.n || 'Customer')}</b>
+          <div class="st">${stars(review.s)}</div>
+          <p>${esc(review.x || '')}</p>
           ${reviewActions(review, id)}
-        </div>
+        </article>
       `).join('') : '<p class="mu">Be the first to review.</p>'}
     </div>
     <label>Your rating</label>
@@ -309,8 +325,8 @@ function openRev(id) {
     <label for="rx">Your opinion</label>
     <textarea id="rx" rows="3" maxlength="500"></textarea>
     <div class="row review-actions">
-      <button class="btn" onclick="postRev('${id}')">Post</button>
-      <button class="btn o" onclick="hide()">Close</button>
+      <button class="btn" onclick="postRev('${id}')">Post review</button>
+      <button class="btn o" onclick="openHomeSketch('${id}')">Back to sketch</button>
     </div>
   `);
 
