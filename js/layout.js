@@ -61,7 +61,6 @@ async function renderSharedLayout() {
         <span>${esc(SITE.footerSupport || 'Support')}: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></span>
         <span>Instagram: <a href="https://instagram.com/${encodeURIComponent(SITE.insta)}">@${esc(SITE.insta)}</a></span>
       </div>
-      <a id="al" href="${PG('admin')}" hidden>Artist panel</a>
       <div class="mu">© ${esc(SITE.siteName)}</div>
     </footer>
   `;
@@ -87,9 +86,9 @@ async function renderSharedLayout() {
 
   function updateProfileMenu() {
     $('#pm').innerHTML = me ? `
-      <a href="${PG('order')}">Order a custom sketch</a>
       <div class="mu">Hi, ${esc(me.name || 'there')}</div>
       <a href="${PG('account')}">My account</a>
+      <a href="${PG('order')}">Order a custom sketch</a>
       <a href="${PG('orders')}">My orders</a>
       ${isAdm() ? `<a href="${PG('admin')}">Artist panel</a>` : ''}
       <a href="#" id="lo">Logout</a>
@@ -112,8 +111,6 @@ async function renderSharedLayout() {
         login();
       };
     }
-
-    $('#al').hidden = !isAdm();
   }
 
   if (!O.layoutUserCallbackRegistered) {

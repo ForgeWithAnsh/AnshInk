@@ -84,7 +84,8 @@ function renderShop() {
     const pinUrl = safeExternalUrl(product.pinterestUrl || '');
     const cardPrice = cardPaperPrice(product, 'shop');
     return `
-      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" style="--shop-index:${Math.min(index, 8)}" tabindex="0" aria-label="View ${esc(product.title || 'sketch design')} details" onclick="if (!event.target.closest('a,button')) openShopProduct('${product.id}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openShopProduct('${product.id}')} ">
+      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" data-shop-id="${esc(product.id)}" style="--shop-index:${Math.min(index, 8)}" tabindex="0" aria-label="View ${esc(product.title || 'sketch design')} details" onclick="if (!event.target.closest('a,button')) openShopProduct('${product.id}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openShopProduct('${product.id}')} ">
+        ${isAdm() ? `<button class="shop-drag-handle" type="button" title="Hold and drag to reorder" aria-label="Hold and drag ${esc(product.title || 'card')} to reorder" onpointerdown="event.stopPropagation();startShopProductDrag(event,'${product.id}')">⠿</button>` : ''}
         <img src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}" loading="lazy">
         <button class="shop-favorite ${shopFavoriteIds.has(product.id) ? 'is-favorite' : ''}" type="button" onclick="event.stopPropagation();toggleShopFavorite('${product.id}')" aria-label="${shopFavoriteIds.has(product.id) ? 'Remove from' : 'Add to'} favorites" aria-pressed="${shopFavoriteIds.has(product.id)}" ${shopFavoriteWrites.has(product.id) ? 'disabled' : ''}>${shopFavoriteIds.has(product.id) ? '★' : '☆'}</button>
         <div class="shop-card-body">

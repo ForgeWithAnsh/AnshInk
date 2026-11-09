@@ -51,8 +51,11 @@ function cancelShopProductDrag(event) {
   if (!shopDragState || event.pointerId !== shopDragState.pointerId) return;
   shopDragState.card.classList.remove('shop-dragging');
   document.removeEventListener('pointermove', moveShopProductDrag);
+  document.removeEventListener('pointerup', finishShopProductDrag);
+  document.removeEventListener('pointercancel', cancelShopProductDrag);
   shopDragState = null;
   if ($('#admin-section')) renderShopAdmin();
+  if ($('#shop-list')) renderShop();
 }
 
 async function finishShopProductDrag(event) {
@@ -64,9 +67,16 @@ async function finishShopProductDrag(event) {
   shopDragState = null;
   if (!moved) return;
 
-  const reordered = [...grid.querySelectorAll('[data-shop-id]')]
+  const visibleOrder = [...grid.querySelectorAll('[data-shop-id]')]
     .map(element => adminShopItems.find(product => product.id === element.dataset.shopId))
     .filter(Boolean);
+  let reordered = visibleOrder;
+  if (grid.id === 'shop-list') {
+    const visibleIds = new Set(visibleOrder.map(product => product.id));
+    const slots = adminShopItems.map((product, index) => visibleIds.has(product.id) ? index : -1).filter(index => index >= 0);
+    reordered = adminShopItems.slice();
+    slots.forEach((slot, index) => { reordered[slot] = visibleOrder[index]; });
+  }
   try {
     const batch = db.batch();
     reordered.forEach((product, index) => {

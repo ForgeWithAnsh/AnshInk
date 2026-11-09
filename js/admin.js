@@ -60,7 +60,6 @@ onUser(async user => {
 });
 
 function artistGoogleLogin() {
-  O.tab = 'g';
   login();
 }
 

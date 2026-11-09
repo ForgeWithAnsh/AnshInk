@@ -22,42 +22,40 @@ function authFail(error) {
 
 function login(callback) {
   O.cb = callback;
-  O.tab = O.tab || 'g';
+  O.tab = '';
   authUI();
 }
 
 function authUI() {
   O.ao = 1;
   const tab = O.tab;
-  const tabs = [
-    ['g', 'Google'],
-    ['em', 'Email']
-  ];
+
+  if (!tab || tab === 'g') {
+    O.tab = '';
+    return show(`
+      <h2>Login / Sign up</h2>
+      <p class="mu">Choose how you want to continue.</p>
+      <div class="auth-methods">
+        <button class="btn" onclick="authGo()">Google</button>
+        <button class="btn o" onclick="O.tab='em';authUI()">Email</button>
+      </div>
+    `);
+  }
 
   show(`
     <h2>Login / Sign up</h2>
-    <div class="tabs">
-      ${tabs.map(([key, label]) => `
-        <button class="btn ${tab === key ? '' : 'o'} sm" onclick="O.tab='${key}';authUI()">
-          ${label}
-        </button>
-      `).join('')}
-    </div>
-    ${tab === 'em' ? `
-      <label for="a1">Email</label>
-      <input id="a1" type="email" autocomplete="email">
-      <label for="a3">Password</label>
-      <input id="a3" type="password" autocomplete="current-password">
-      <p class="mu">
-        New here? Enter an email and a password, then tap <b>Create account</b>.<br>
-        <a href="#" onclick="forgot();return false">Forgot password?</a>
-      </p>
-    ` : '<p class="mu">Continue with your Google account.</p>'}
+    <button class="btn o sm" onclick="O.tab='';authUI()">← Other sign-in options</button>
+    <label for="a1">Email</label>
+    <input id="a1" type="email" autocomplete="email">
+    <label for="a3">Password</label>
+    <input id="a3" type="password" autocomplete="current-password">
+    <p class="mu">
+      New here? Enter an email and a password, then tap <b>Create account</b>.<br>
+      <a href="#" onclick="forgot();return false">Forgot password?</a>
+    </p>
     <div class="row auth-actions">
-      ${tab === 'em' ? `
-        <button class="btn" onclick="emailGo('in')">Log in</button>
-        <button class="btn o" onclick="emailGo('up')">Create account</button>
-      ` : '<button class="btn" onclick="authGo()">Continue with Google</button>'}
+      <button class="btn" onclick="emailGo('in')">Log in</button>
+      <button class="btn o" onclick="emailGo('up')">Create account</button>
       <button class="btn o" onclick="O.ao=0;hide()">Cancel</button>
     </div>
   `);
