@@ -41,6 +41,7 @@ function renderShop() {
           <h2>${esc(product.title || 'Sketch design')}</h2>
           <p>${esc(product.description || '')}</p>
           <div class="shop-price">${esc(cardPrice.size?.label || 'Paper size')} · ₹${cardPrice.price.toLocaleString('en-IN')}</div>
+          <button class="btn o sm shop-view-details" onclick="openShopProduct('${product.id}')">View design</button>
           <div class="row">
             <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
             ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}
@@ -50,6 +51,25 @@ function renderShop() {
       </article>
     `;
   }).join('') : '<p class="mu shop-empty">No designs are listed in this category yet.</p>';
+}
+
+function openShopProduct(id) {
+  const product = shopProducts.find(item => item.id === id);
+  if (!product) return;
+  const pinUrl = safeExternalUrl(product.pinterestUrl || '');
+  const cardPrice = cardPaperPrice(product, 'shop');
+  show(`
+    <h2>${esc(product.title || 'Sketch design')}</h2>
+    <img class="shop-detail-image" src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}">
+    <p>${esc(product.description || '')}</p>
+    <div class="shop-price">${esc(cardPrice.size?.label || 'Paper size')} · ₹${cardPrice.price.toLocaleString('en-IN')}</div>
+    <p class="mu">Choose your paper size after continuing; the price updates for each size.</p>
+    <div class="row">
+      <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
+      ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}
+      <button class="btn o" onclick="hide()">Close</button>
+    </div>
+  `);
 }
 
 async function loadShop() {
