@@ -33,7 +33,7 @@ function renderShop() {
     const pinUrl = safeExternalUrl(product.pinterestUrl || '');
     const cardPrice = cardPaperPrice(product, 'shop');
     return `
-      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" style="--shop-index:${Math.min(index, 8)}">
+      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" style="--shop-index:${Math.min(index, 8)}" tabindex="0" aria-label="View ${esc(product.title || 'sketch design')} details" onclick="if (!event.target.closest('a,button')) openShopProduct('${product.id}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openShopProduct('${product.id}')} ">
         <img src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}" loading="lazy">
         <div class="shop-card-body">
           <div class="shop-category">${esc(product.category || 'InkShop')}</div>
@@ -41,12 +41,11 @@ function renderShop() {
           <h2>${esc(product.title || 'Sketch design')}</h2>
           <p>${esc(product.description || '')}</p>
           <div class="shop-price">${esc(cardPrice.size?.label || 'Paper size')} · ₹${cardPrice.price.toLocaleString('en-IN')}</div>
-          <button class="btn o sm shop-view-details" onclick="openShopProduct('${product.id}')">View design</button>
           <div class="row">
-            <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
-            ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}
+            <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}" onclick="event.stopPropagation()">Order this design</a>
+            ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">View on Pinterest</a>` : ''}
           </div>
-          ${isAdm() ? `<div class="row shop-admin-actions"><button class="btn o sm" onclick="showShopProductForm('${product.id}')">Edit card</button><button class="btn o sm" onclick="deleteShopProduct('${product.id}')">Delete</button></div>` : ''}
+          ${isAdm() ? `<div class="row shop-admin-actions"><button class="btn o sm" onclick="event.stopPropagation();showShopProductForm('${product.id}')">Edit card</button><button class="btn o sm" onclick="event.stopPropagation();deleteShopProduct('${product.id}')">Delete</button></div>` : ''}
         </div>
       </article>
     `;
@@ -58,16 +57,22 @@ function openShopProduct(id) {
   if (!product) return;
   const pinUrl = safeExternalUrl(product.pinterestUrl || '');
   const cardPrice = cardPaperPrice(product, 'shop');
+  $('#mb').classList.add('shop-detail-box');
   show(`
-    <h2>${esc(product.title || 'Sketch design')}</h2>
-    <img class="shop-detail-image" src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}">
-    <p>${esc(product.description || '')}</p>
-    <div class="shop-price">${esc(cardPrice.size?.label || 'Paper size')} · ₹${cardPrice.price.toLocaleString('en-IN')}</div>
-    <p class="mu">Choose your paper size after continuing; the price updates for each size.</p>
-    <div class="row">
-      <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
-      ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}
-      <button class="btn o" onclick="hide()">Close</button>
+    <div class="shop-detail-layout">
+      <div class="shop-detail-media"><img class="shop-detail-image" src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}"></div>
+      <div class="shop-detail-info">
+        <div class="shop-category">${esc(product.category || 'InkShop')}</div>
+        <h2>${esc(product.title || 'Sketch design')}</h2>
+        <p>${esc(product.description || '')}</p>
+        <div class="shop-price">${esc(cardPrice.size?.label || 'Paper size')} · ₹${cardPrice.price.toLocaleString('en-IN')}</div>
+        <p class="mu">Choose a paper size after continuing; its price will be shown on the order page.</p>
+        <div class="row shop-detail-actions">
+          <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}">Order this design</a>
+          ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer">View on Pinterest</a>` : ''}
+          <button class="btn o" onclick="hide()">Close</button>
+        </div>
+      </div>
     </div>
   `);
 }

@@ -85,12 +85,13 @@ async function renderSharedLayout() {
 
   function updateProfileMenu() {
     $('#pm').innerHTML = me ? `
+      <a href="${PG('order')}">Order a custom sketch</a>
       <div class="mu">Hi, ${esc(me.name || 'there')}</div>
       <a href="${PG('account')}">My account</a>
       <a href="${PG('orders')}">My orders</a>
       ${isAdm() ? `<a href="${PG('admin')}">Artist panel</a>` : ''}
       <a href="#" id="lo">Logout</a>
-    ` : `<a href="#" id="li">Login / Sign up</a>`;
+    ` : `<a href="${PG('order')}">Order a custom sketch</a><a href="#" id="li">Login / Sign up</a>`;
 
     const logout = $('#lo');
     const loginLink = $('#li');

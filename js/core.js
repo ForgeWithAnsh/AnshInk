@@ -60,6 +60,7 @@ function show(content) {
 
 function hide() {
   $('#m').classList.remove('on');
+  $('#mb').classList.remove('shop-detail-box');
 }
 
 $('#m').addEventListener('click', event => {

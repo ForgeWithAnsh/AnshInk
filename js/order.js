@@ -60,7 +60,8 @@ async function startOrder() {
         shopDescription: product.description || ''
       });
       const sizeCategory = paperSizeCategory();
-      const chosenSize = cardPaperSize(product);
+      const chosenSize = paperSizeOptions().find(option => option.available && /a4/i.test(`${option.id} ${option.label}`))
+        || cardPaperSize(product);
       if (sizeCategory && chosenSize) O.order.selections = { [sizeCategory.id]: chosenSize.id };
     } catch (error) {
       console.error('Could not load InkShop product:', error);
