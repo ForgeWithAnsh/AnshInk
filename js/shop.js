@@ -18,6 +18,17 @@ function safeExternalUrl(url) {
   }
 }
 
+function sortShopProducts(products) {
+  return products.sort((first, second) => {
+    const firstOrder = Number.isFinite(Number(first.shopOrder)) ? Number(first.shopOrder) : null;
+    const secondOrder = Number.isFinite(Number(second.shopOrder)) ? Number(second.shopOrder) : null;
+    if (firstOrder !== null && secondOrder !== null) return firstOrder - secondOrder;
+    if (firstOrder !== null) return -1;
+    if (secondOrder !== null) return 1;
+    return Number(second.createdAt || 0) - Number(first.createdAt || 0);
+  });
+}
+
 function renderShop() {
   $('#shop-heading').textContent = SITE.shopHeading || 'InkShop';
   $('#shop-intro').textContent = SITE.shopIntro || '';
@@ -32,6 +43,7 @@ function renderShop() {
   shopList.innerHTML = visible.length ? visible.map((product, index) => {
     const pinUrl = safeExternalUrl(product.pinterestUrl || '');
     const cardPrice = cardPaperPrice(product, 'shop');
+    const productIndex = visible.findIndex(item => item.id === product.id);
     return `
       <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" style="--shop-index:${Math.min(index, 8)}" tabindex="0" aria-label="View ${esc(product.title || 'sketch design')} details" onclick="if (!event.target.closest('a,button')) openShopProduct('${product.id}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openShopProduct('${product.id}')} ">
         <img src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}" loading="lazy">
@@ -45,7 +57,7 @@ function renderShop() {
             <a class="btn" href="${PG('order')}?shop=${encodeURIComponent(product.id)}" onclick="event.stopPropagation()">Order this design</a>
             ${pinUrl ? `<a class="btn o" href="${esc(pinUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">View on Pinterest</a>` : ''}
           </div>
-          ${isAdm() ? `<div class="row shop-admin-actions"><button class="btn o sm" onclick="event.stopPropagation();showShopProductForm('${product.id}')">Edit card</button><button class="btn o sm" onclick="event.stopPropagation();deleteShopProduct('${product.id}')">Delete</button></div>` : ''}
+          ${isAdm() ? `<div class="row shop-admin-actions"><button class="btn o sm" onclick="event.stopPropagation();moveShopProduct('${product.id}',-1)" aria-label="Move ${esc(product.title || 'card')} earlier" ${productIndex === 0 ? 'disabled' : ''}>↑</button><button class="btn o sm" onclick="event.stopPropagation();moveShopProduct('${product.id}',1)" aria-label="Move ${esc(product.title || 'card')} later" ${productIndex === visible.length - 1 ? 'disabled' : ''}>↓</button><button class="btn o sm" onclick="event.stopPropagation();showShopProductForm('${product.id}')">Edit card</button><button class="btn o sm" onclick="event.stopPropagation();deleteShopProduct('${product.id}')">Delete</button></div>` : ''}
         </div>
       </article>
     `;
@@ -83,8 +95,7 @@ async function loadShop() {
     const snapshot = isAdm()
       ? await db.collection('shopProducts').get()
       : await db.collection('shopProducts').where('active', '==', true).get();
-    shopProducts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
-      .sort((first, second) => (second.createdAt || 0) - (first.createdAt || 0));
+    shopProducts = sortShopProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
   } catch (error) {
     console.error('Could not load InkShop:', error);
     shopList.innerHTML = '<p class="mu shop-empty">InkShop could not load. Please refresh the page.</p>';

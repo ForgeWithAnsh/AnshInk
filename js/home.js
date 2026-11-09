@@ -111,7 +111,7 @@ renderHomeContent();
 siteDataReady.then(renderHomeContent);
 
 /* Start scroll reveals after the quote screen closes. */
-const revealObserver = new IntersectionObserver(entries => {
+const revealObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (!entry.isIntersecting) return;
 
@@ -119,13 +119,31 @@ const revealObserver = new IntersectionObserver(entries => {
     revealObserver.unobserve(entry.target);
     setTimeout(() => { entry.target.style.transitionDelay = ''; }, 1400);
   });
-}, { threshold: 0.15, rootMargin: '0px 0px -12% 0px' });
+}, { threshold: 0, rootMargin: '0px' });
+
+// Some mobile browsers change their visual viewport when desktop mode is enabled.
+// Use the element's actual position as a fallback so reveal animations still start.
+function revealVisibleElements() {
+  if (!O.go) return;
+  document.querySelectorAll('.rv:not(.in)').forEach(element => {
+    const bounds = element.getBoundingClientRect();
+    if (bounds.top >= window.innerHeight * 0.92 || bounds.bottom <= 0) return;
+    element.classList.add('in');
+    if (revealObserver) revealObserver.unobserve(element);
+    setTimeout(() => { element.style.transitionDelay = ''; }, 1400);
+  });
+}
+
+window.addEventListener('scroll', revealVisibleElements, { passive: true });
+window.addEventListener('resize', () => requestAnimationFrame(revealVisibleElements), { passive: true });
+window.addEventListener('pageshow', () => requestAnimationFrame(revealVisibleElements));
 
 function reveal() {
   document.querySelectorAll('.rv:not(.in)').forEach((element, index) => {
     element.style.transitionDelay = `${(index % 3) * 100}ms`;
-    revealObserver.observe(element);
+    if (revealObserver) revealObserver.observe(element);
   });
+  requestAnimationFrame(revealVisibleElements);
 }
 
 function go() {
@@ -316,14 +334,14 @@ function openRev(id) {
           <p>${esc(review.x || '')}</p>
           ${reviewActions(review, id)}
         </article>
-      `).join('') : '<p class="mu">Be the first to review.</p>'}
+      `).join('') : '<p class="mu">Be the first to review this sketch.</p>'}
     </div>
     <label>Your rating</label>
     <div class="st rating-input" id="rs">
       ${[1, 2, 3, 4, 5].map(value => `<span onclick="setR(${value})">★</span>`).join('')}
     </div>
-    <label for="rx">Your opinion</label>
-    <textarea id="rx" rows="3" maxlength="500"></textarea>
+    <label for="rx">Your review</label>
+    <textarea id="rx" rows="3" maxlength="500" placeholder="Share what you think about this sketch"></textarea>
     <div class="row review-actions">
       <button class="btn" onclick="postRev('${id}')">Post review</button>
       <button class="btn o" onclick="openHomeSketch('${id}')">Back to sketch</button>

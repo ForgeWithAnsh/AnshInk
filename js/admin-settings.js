@@ -4,10 +4,48 @@ let adminShopItems = [];
 async function loadAdminShopItems() {
   try {
     const snapshot = await db.collection('shopProducts').get();
-    adminShopItems = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    adminShopItems = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).sort((first, second) => {
+      const firstOrder = Number.isFinite(Number(first.shopOrder)) ? Number(first.shopOrder) : null;
+      const secondOrder = Number.isFinite(Number(second.shopOrder)) ? Number(second.shopOrder) : null;
+      if (firstOrder !== null && secondOrder !== null) return firstOrder - secondOrder;
+      if (firstOrder !== null) return -1;
+      if (secondOrder !== null) return 1;
+      return Number(second.createdAt || 0) - Number(first.createdAt || 0);
+    });
   } catch (error) {
     console.error('Could not load InkShop products:', error);
     adminShopItems = [];
+  }
+}
+
+async function moveShopProduct(id, direction) {
+  if (!isAdm()) return;
+  const filterCategory = typeof selectedShopCategory === 'undefined' ? 'All' : selectedShopCategory;
+  const visibleItems = adminShopItems.filter(product => filterCategory === 'All' || product.category === filterCategory);
+  const visibleIndex = visibleItems.findIndex(product => product.id === id);
+  const targetIndex = visibleIndex + direction;
+  if (visibleIndex < 0 || targetIndex < 0 || targetIndex >= visibleItems.length) return;
+
+  const slots = adminShopItems.map((product, index) => filterCategory === 'All' || product.category === filterCategory ? index : -1).filter(index => index >= 0);
+  [visibleItems[visibleIndex], visibleItems[targetIndex]] = [visibleItems[targetIndex], visibleItems[visibleIndex]];
+  const reordered = adminShopItems.slice();
+  slots.forEach((slot, index) => { reordered[slot] = visibleItems[index]; });
+
+  try {
+    const batch = db.batch();
+    reordered.forEach((product, index) => {
+      batch.set(db.collection('shopProducts').doc(product.id), { shopOrder: index }, { merge: true });
+    });
+    await batch.commit();
+    adminShopItems = reordered.map((product, index) => ({ ...product, shopOrder: index }));
+    if (typeof shopProducts !== 'undefined') {
+      shopProducts = adminShopItems.slice();
+      renderShop();
+    }
+    if ($('#admin-section')) renderShopAdmin();
+  } catch (error) {
+    console.error('Could not reorder InkShop cards:', error);
+    toast('Could not save the new InkShop order. Confirm the latest Firestore rules are published.');
   }
 }
 
@@ -269,11 +307,11 @@ function renderShopAdmin() {
   const content = $('#admin-section');
   content.innerHTML = `
     <div class="admin-shop-heading"><div><h2>InkShop products</h2><p class="mu">Add a reference image, its Pinterest link, and a price for each paper size.</p></div><button class="btn" onclick="showShopProductForm()">+ Add InkShop card</button></div>
-    ${adminShopItems.length ? `<div class="admin-shop-grid">${adminShopItems.map(item => `
+    ${adminShopItems.length ? `<div class="admin-shop-grid">${adminShopItems.map((item, index) => `
       <article class="admin-shop-card">
         <img src="${esc(item.image || '')}" alt="">
         <div><b>${esc(item.title || 'Untitled')}</b><div class="mu">${esc(item.category || '')} · ${esc(cardPaperPrice(item, 'shop').size?.label || 'Paper size')} ₹${cardPaperPrice(item, 'shop').price.toLocaleString('en-IN')} · ${item.active === false ? 'Hidden' : 'Published'}</div></div>
-        <div class="row"><button class="btn o sm" onclick="showShopProductForm('${item.id}')">Edit</button><button class="btn o sm" onclick="deleteShopProduct('${item.id}')">Delete</button></div>
+        <div class="row"><button class="btn o sm" onclick="moveShopProduct('${item.id}',-1)" aria-label="Move ${esc(item.title || 'card')} earlier" ${index === 0 ? 'disabled' : ''}>↑</button><button class="btn o sm" onclick="moveShopProduct('${item.id}',1)" aria-label="Move ${esc(item.title || 'card')} later" ${index === adminShopItems.length - 1 ? 'disabled' : ''}>↓</button><button class="btn o sm" onclick="showShopProductForm('${item.id}')">Edit</button><button class="btn o sm" onclick="deleteShopProduct('${item.id}')">Delete</button></div>
       </article>
     `).join('')}</div>` : '<p class="mu">No InkShop cards yet.</p>'}
   `;
@@ -351,7 +389,10 @@ async function saveShopProduct(id) {
   if (data.image.length > 900000) return toast('Choose a smaller image for Firebase');
   try {
     const ref = id ? db.collection('shopProducts').doc(id) : db.collection('shopProducts').doc();
-    if (!id) data.createdAt = TS();
+    if (!id) {
+      data.createdAt = TS();
+      data.shopOrder = Math.max(-1, ...adminShopItems.map(item => Number(item.shopOrder)).filter(Number.isFinite)) + 1;
+    }
     await ref.set(data, { merge: true });
     await loadAdminShopItems();
     hide();
