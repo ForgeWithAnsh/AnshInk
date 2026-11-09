@@ -18,6 +18,7 @@ body[data-page="shop"] #hdr .brand-group{animation:shop-copy-enter .65s ease bot
 @keyframes shop-media-enter{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
 @keyframes shop-copy-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .shop-favorite{position:absolute;z-index:2;top:10px;right:10px;width:42px;height:42px;border:1px solid #d8c6ae;border-radius:50%;background:#fffaf2eF;color:#704c34;font-size:26px;line-height:1;cursor:pointer;box-shadow:0 3px 12px #30201430;transition:transform .2s,background .2s,color .2s}.shop-favorite:hover{transform:scale(1.12)}.shop-favorite.is-favorite{background:#fff1dc;color:#c24f2b}.shop-favorite:disabled{opacity:.65;cursor:wait}
+.shop-card .shop-drag-handle{position:absolute;z-index:3;top:10px;left:10px;width:38px;height:38px;display:grid;place-items:center;touch-action:none;cursor:grab;border:1px solid var(--ln);border-radius:50%;background:#fffaf2ee;color:var(--ac);font-size:21px;font-weight:700;line-height:1;box-shadow:0 3px 12px #30201430}.shop-card .shop-drag-handle:active{cursor:grabbing;background:#ecdfcb}.shop-card.shop-dragging{opacity:.68;outline:2px dashed var(--ac);outline-offset:2px;z-index:8}
 @media(max-width:760px){.shop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.shop-card-body{padding:10px}.shop-card h2{font-size:17px}}
 @media(max-width:480px){.shop-grid{grid-template-columns:minmax(0,1fr)}.shop-card{max-width:420px;width:100%;margin-inline:auto}.shop-card img{max-height:500px}}
 

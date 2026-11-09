@@ -37,6 +37,7 @@ input,select,textarea{width:100%;padding:10px;border:1px solid var(--ln);border-
 .modal.on{display:flex;animation:fade .25s both}
 .box{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:18px;width:100%;max-width:520px;margin:auto;animation:pop .35s both}
 .box h2{margin:0 0 10px}
+.auth-methods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.auth-methods .btn{text-align:center;padding:13px 16px;font-weight:700}
 .sketch-detail-rating{margin:10px 0 14px;padding:12px 14px;border:1px solid var(--ln);border-radius:10px;background:#fffaf2}
 .sketch-reviews-list{display:grid;gap:10px;max-height:40vh;overflow:auto;padding:2px 3px 4px}
 .sketch-review{padding:12px 14px;border:1px solid var(--ln);border-radius:10px;background:#fffaf2;box-shadow:0 2px 8px #5c3f2b12}
