@@ -105,6 +105,9 @@ function setHeroImage() {
 // Restart it after inserting the quote so the full entrance is visible on every reload.
 renderSplashQuote(true);
 setHeroImage();
+// Render built-in copy immediately so the hero and about section are not blank
+// while the optional Firestore settings request is still in flight.
+renderHomeContent();
 siteDataReady.then(renderHomeContent);
 
 /* Start scroll reveals after the quote screen closes. */

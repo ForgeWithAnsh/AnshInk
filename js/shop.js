@@ -29,10 +29,10 @@ function renderShop() {
     <button class="btn ${category === selectedShopCategory ? '' : 'o'} sm" data-category="${esc(category)}" onclick="selectShopCategory(this.dataset.category)">${esc(category)}</button>
   `).join('');
   const visible = shopProducts.filter(product => selectedShopCategory === 'All' || product.category === selectedShopCategory);
-  shopList.innerHTML = visible.length ? visible.map(product => {
+  shopList.innerHTML = visible.length ? visible.map((product, index) => {
     const pinUrl = safeExternalUrl(product.pinterestUrl || '');
     return `
-      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}">
+      <article class="shop-card ${product.active === false ? 'shop-card-hidden' : ''}" style="--shop-index:${Math.min(index, 8)}">
         <img src="${esc(product.image || '')}" alt="Pinterest reference: ${esc(product.title || '')}" loading="lazy">
         <div class="shop-card-body">
           <div class="shop-category">${esc(product.category || 'InkShop')}</div>

@@ -82,6 +82,7 @@ function normalizeOrderSettings(data = {}) {
     categories: data.categories.map((category, index) => ({
       id: String(category.id || `category-${index + 1}`),
       label: String(category.label || `Option ${index + 1}`),
+      defaultOption: String(category.defaultOption || ''),
       options: (Array.isArray(category.options) ? category.options : []).map((option, optionIndex) => ({
         id: String(option.id || `option-${optionIndex + 1}`),
         label: String(option.label || `Option ${optionIndex + 1}`),
@@ -89,6 +90,12 @@ function normalizeOrderSettings(data = {}) {
         available: option.available !== false
       }))
     })).filter(category => category.options.length)
+      .map(category => ({
+        ...category,
+        defaultOption: category.options.some(option => option.id === category.defaultOption && option.available)
+          ? category.defaultOption
+          : (category.options.find(option => option.available)?.id || '')
+      }))
   };
 }
 
@@ -141,7 +148,8 @@ function orderOptionPrice(selections, baseline = null, basePrice = ORDER_SETTING
 
 function defaultOrderSelections() {
   return Object.fromEntries(ORDER_SETTINGS.categories.map(category => {
-    const available = category.options.find(option => option.available);
+    const defaultOption = category.options.find(option => option.id === category.defaultOption && option.available);
+    const available = defaultOption || category.options.find(option => option.available);
     return [category.id, available?.id || ''];
   }));
 }

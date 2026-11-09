@@ -170,7 +170,7 @@ function renderOrderSettingsForm() {
   const content = $('#admin-section');
   content.innerHTML = `
     <h2>Order options &amp; prices</h2>
-    <p class="mu">Set the standard starting price. Each option price is added to that amount. Negative option prices are allowed for simpler styles. Unavailable choices remain visible but cannot be selected.</p>
+    <p class="mu">Set the standard starting price and choose a default for each category. Defaults apply to new custom orders; sketch-specific presets can override them. Each option price is added to the starting amount. Unavailable choices cannot be selected.</p>
     <label for="order-base-price">Starting price ₹</label>
     <input id="order-base-price" type="number" min="0" step="10" value="${O.orderSettingsDraft.basePrice}">
     ${O.orderSettingsDraft.categories.map((category, categoryIndex) => `
@@ -179,6 +179,10 @@ function renderOrderSettingsForm() {
           <input aria-label="Category name" data-cat-label value="${esc(category.label)}">
           <button class="btn o sm" type="button" onclick="removeOrderCategory(${categoryIndex})">Delete category</button>
         </div>
+        <label>Preselected option for new orders</label>
+        <select data-default-option aria-label="Preselected option for ${esc(category.label)}">
+          ${category.options.map(option => `<option value="${esc(option.id)}" ${category.defaultOption === option.id ? 'selected' : ''} ${option.available ? '' : 'disabled'}>${esc(option.label)}${option.available ? '' : ' — Unavailable'}</option>`).join('')}
+        </select>
         ${category.options.map((option, optionIndex) => `
           <div class="option-row" data-opt-index="${optionIndex}">
             <input aria-label="Option name" data-opt-label value="${esc(option.label)}" placeholder="Option name">
@@ -202,6 +206,7 @@ function captureOrderSettingsForm() {
     const category = draft.categories[Number(categoryElement.dataset.catIndex)];
     if (!category) return;
     category.label = categoryElement.querySelector('[data-cat-label]').value.trim();
+    category.defaultOption = categoryElement.querySelector('[data-default-option]').value;
     category.options = [...categoryElement.querySelectorAll('.option-row')].map((optionElement, index) => ({
       id: category.options[index]?.id || `option-${Date.now()}-${index}`,
       label: optionElement.querySelector('[data-opt-label]').value.trim(),
