@@ -26,6 +26,7 @@ const DEFAULT_SITE = {
   shopNotice: 'These are Pinterest reference images, not photos of finished sketches. Your sketch will be drawn by hand after you place an order.',
   orderNotice: 'Delivery charges are confirmed after you order. The final price is confirmed before I start.',
   shopCategories: ['Anime', 'Characters', 'Portraits', 'Other'],
+  brandLogo: '',
   favicon: ''
 };
 
@@ -70,6 +71,7 @@ function normalizeSiteSettings(data = {}) {
   return {
     ...copyData(DEFAULT_SITE),
     ...data,
+    brandLogo: typeof data.brandLogo === 'string' ? data.brandLogo : DEFAULT_SITE.brandLogo,
     story: Array.isArray(data.story) ? data.story : DEFAULT_SITE.story.slice(),
     about: Array.isArray(data.about) ? data.about : copyData(DEFAULT_SITE.about)
   };

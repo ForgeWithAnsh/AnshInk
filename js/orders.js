@@ -73,9 +73,7 @@ function view(id) {
   const paymentNotice = order.st === 1
     ? `
       <p class="mu">Please pay by ${paymentDueDate}, or the order is cancelled automatically.</p>
-      ${order.link
-        ? `<button class="btn" onclick="payNow('${order.id}')">Pay ${rs(tot(order))}</button>`
-        : '<p class="mu">Your order is accepted. The payment link will appear here shortly.</p>'}
+      <a class="btn" href="${PG('pay')}?id=${encodeURIComponent(order.id)}">Pay ${rs(tot(order))}</a>
     `
     : '';
   const cancelButton = order.st === 0
@@ -121,13 +119,6 @@ function view(id) {
       </div>
     </div>
   `;
-}
-
-function payNow(id) {
-  const order = O.list.find(item => item.id === id);
-  if (!order?.link) return;
-  window.open(order.link, '_blank', 'noopener,noreferrer');
-  toast(`Pay for Sketch #${id} on Razorpay.`, 5000);
 }
 
 async function cancelOrder(id) {

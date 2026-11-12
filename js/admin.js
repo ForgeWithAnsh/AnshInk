@@ -135,10 +135,8 @@ function renderNewOrderActions(order) {
     <input id="f${order.id}" inputmode="numeric" value="${order.amt}">
     <label for="d${order.id}">Delivery charge ₹</label>
     <input id="d${order.id}" inputmode="numeric" value="0">
-    <label for="l${order.id}">Razorpay Payment Link</label>
-    <input id="l${order.id}" type="url" placeholder="https://rzp.io/i/...">
     <div class="row admin-actions">
-      <button class="btn sm" onclick="accept('${order.id}')">Accept &amp; ask for payment</button>
+      <button class="btn sm" onclick="accept('${order.id}')">Accept &amp; enable UPI payment</button>
       <button class="btn o sm" onclick="decline('${order.id}')">Decline</button>
     </div>
   `;
@@ -154,11 +152,7 @@ function renderActiveOrderActions(order) {
     <select id="status-${order.id}" onchange="adu('${order.id}',{st:+this.value})">
       ${statuses}
     </select>
-    ${order.st === 1 ? `
-      <label for="l${order.id}">Razorpay Payment Link</label>
-      <input id="l${order.id}" type="url" value="${esc(order.link || '')}" placeholder="https://rzp.io/i/...">
-      <button class="btn sm" onclick="savePaymentLink('${order.id}')">Save link</button>
-    ` : ''}
+    ${order.st === 1 ? '<p class="mu">Customers can pay by UPI using the accepted total and their Sketch ID.</p>' : ''}
     ${order.rf === 'req' ? `
       <p><b>Refund requested</b></p>
       <button class="btn sm" onclick="adu('${order.id}',{st:-3})">Mark refunded</button>
@@ -211,24 +205,15 @@ function accept(id) {
   const value = field => $(`#${field}${id}`).value.trim();
   const finalPrice = Number(value('f'));
   const deliveryCharge = Number(value('d')) || 0;
-  const link = value('l');
 
   if (!finalPrice) return toast('Enter the final price');
-  if (link && !/^https:\/\//i.test(link)) return toast('Enter a valid HTTPS payment link');
 
   adu(id, {
     finalPrice,
     deliveryCharge,
-    link,
     st: 1,
     acc: TS()
   });
-}
-
-function savePaymentLink(id) {
-  const link = $(`#l${id}`).value.trim();
-  if (!/^https:\/\//i.test(link)) return toast('Enter a valid HTTPS payment link');
-  adu(id, { link });
 }
 
 function decline(id) {

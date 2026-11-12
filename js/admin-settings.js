@@ -118,10 +118,6 @@ function renderSiteSettingsForm() {
       <label>Support email<input id="site-email" type="email" value="${esc(SITE.email)}"></label>
       <label>Instagram username<input id="site-insta" value="${esc(SITE.insta)}"></label>
       <label>Hero button text<input id="site-hero-cta" value="${esc(SITE.heroCta || '')}"></label>
-      <label>Home navigation text<input id="site-nav-home" value="${esc(SITE.navHome || '')}"></label>
-      <label>Gallery navigation text<input id="site-nav-gallery" value="${esc(SITE.navGallery || '')}"></label>
-      <label>About navigation text<input id="site-nav-about" value="${esc(SITE.navAbout || '')}"></label>
-      <label>Reviews navigation text<input id="site-nav-reviews" value="${esc(SITE.navReviews || '')}"></label>
       <label>Footer support label<input id="site-footer-support" value="${esc(SITE.footerSupport || '')}"></label>
       <label>Gallery heading<input id="site-gallery-heading" value="${esc(SITE.galleryHeading || '')}"></label>
       <label>All sketches button text<input id="site-all-sketches-cta" value="${esc(SITE.allSketchesCta || '')}"></label>
@@ -149,6 +145,9 @@ function renderSiteSettingsForm() {
     <input id="site-hero-image" type="file" accept="image/*" onchange="pickSiteHero(this)">
     <div class="row">
       <img class="admin-logo-preview" id="site-hero-preview" src="${esc(heroPreview)}" alt="Homepage image preview">
+      <label class="file-action">Header brand mark (replaces the pencil)<input id="site-brand-logo-file" type="file" accept="image/*" onchange="pickSiteBrandLogo(this)"></label>
+      <img class="admin-logo-preview brand-logo-preview" id="site-brand-logo-preview" src="${esc(SITE.brandLogo || '')}" alt="Header logo preview" ${SITE.brandLogo ? '' : 'hidden'}>
+      <button class="btn o sm" type="button" onclick="clearSiteBrandLogo()">Use pencil mark</button>
       <label class="file-action">Favicon / browser bookmark logo<input id="site-favicon-file" type="file" accept="image/*" onchange="pickSiteFavicon(this)"></label>
       <img class="admin-logo-preview favicon-preview" id="site-favicon-preview" src="${SITE.favicon || ''}" alt="Favicon preview" ${SITE.favicon ? '' : 'hidden'}>
       <button class="btn o sm" type="button" onclick="clearSiteFavicon()">Use default icon</button>
@@ -158,6 +157,7 @@ function renderSiteSettingsForm() {
 }
 
 let pendingHeroImage = '';
+let pendingBrandLogo = null;
 let pendingFavicon = null;
 
 function pickSiteHero(input) {
@@ -167,6 +167,38 @@ function pickSiteHero(input) {
     pendingHeroImage = data;
     $('#site-hero-preview').src = data;
   });
+}
+
+function pickSiteBrandLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, 160 / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      pendingBrandLogo = canvas.toDataURL('image/png');
+      const preview = $('#site-brand-logo-preview');
+      preview.src = pendingBrandLogo;
+      preview.hidden = false;
+    };
+    image.onerror = () => toast('Could not read that logo image');
+    image.src = reader.result;
+  };
+  reader.onerror = () => toast('Could not read that logo image');
+  reader.readAsDataURL(file);
+}
+
+function clearSiteBrandLogo() {
+  pendingBrandLogo = '';
+  const preview = $('#site-brand-logo-preview');
+  preview.removeAttribute('src');
+  preview.hidden = true;
+  $('#site-brand-logo-file').value = '';
 }
 
 function pickSiteFavicon(input) {
@@ -213,10 +245,6 @@ async function saveSiteSettings() {
     email: value('site-email') || CFG.email,
     insta: value('site-insta').replace(/^@/, '') || CFG.insta,
     heroCta: value('site-hero-cta'),
-    navHome: value('site-nav-home'),
-    navGallery: value('site-nav-gallery'),
-    navAbout: value('site-nav-about'),
-    navReviews: value('site-nav-reviews'),
     footerSupport: value('site-footer-support'),
     galleryHeading: value('site-gallery-heading'),
     allSketchesCta: value('site-all-sketches-cta'),
@@ -232,13 +260,18 @@ async function saveSiteSettings() {
     orderNotice: value('site-order-notice'),
     shopCategories: [...new Set(value('site-shop-categories').split('\n').map(line => line.trim()).filter(Boolean))],
     hero: pendingHeroImage || SITE.hero,
+    brandLogo: pendingBrandLogo === null ? SITE.brandLogo : pendingBrandLogo,
     favicon: pendingFavicon === null ? SITE.favicon : pendingFavicon
   };
-  if (settings.hero.startsWith('data:') && settings.hero.length > 900000) return toast('The homepage image is too large. Choose a smaller image.');
+  const embeddedImageSize = [settings.hero, settings.brandLogo, settings.favicon]
+    .filter(image => image?.startsWith('data:'))
+    .reduce((total, image) => total + image.length, 0);
+  if (embeddedImageSize > 900000) return toast('The combined homepage and logo images are too large. Choose smaller images.');
   try {
     await db.collection('siteSettings').doc('public').set(settings, { merge: true });
     SITE = normalizeSiteSettings(settings);
     pendingHeroImage = '';
+    pendingBrandLogo = null;
     pendingFavicon = null;
     applyFavicon();
     if (typeof renderSharedLayout === 'function') await renderSharedLayout();
