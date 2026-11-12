@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Thank you – AnshInk</title>
+  <meta name="description" content="Your AnshInk payment is waiting for manual verification.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/base.css?v=20261113-primary-navigation">
+  <link rel="stylesheet" href="../css/payment.css">
+</head>
+<body data-base="../" data-page="">
+  <div id="hdr"></div>
+  <main class="page payment-page">
+    <section class="payment-panel thankyou-panel">
+      <div class="payment-check" aria-hidden="true">✓</div>
+      <p class="payment-eyebrow">Thank you</p>
+      <h1>Payment submitted</h1>
+      <p>Your payment will be manually verified. Check <b>My orders</b> for updates to your order.</p>
+      <div class="payment-actions">
+        <a class="btn big" href="orders.html">Go to My orders</a>
+        <a class="btn o" href="../index.html">Back to home</a>
+      </div>
+      <p class="mu">No payment status changes until AnshInk confirms the payment.</p>
+    </section>
+  </main>
+  <div id="ftr"></div>
+  <div class="modal" id="m"><div class="box" id="mb"></div></div>
+  <div id="rc"></div><div class="toast" id="t"></div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/core.js"></script>
+  <script src="../js/site-data.js?v=20261113-primary-navigation"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js?v=20261113-primary-navigation"></script>
+</body>
+</html>
