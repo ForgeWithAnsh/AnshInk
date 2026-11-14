@@ -97,16 +97,14 @@ function renderOrdersSection() {
 }
 
 function renderOrder(order) {
-  const sketchId = /^\d+$/.test(order.id)
-    ? String(order.id).padStart(4, '0')
-    : esc(order.id);
+  const sketchId = sketchReference(order);
 
   return `
     <details class="ord">
       <summary>
         <img class="admin-thumb" src="${order.done || order.photo || ''}" alt="">
         <div>
-          <b>Sketch #${sketchId} · ${esc(order.title || 'Untitled sketch')}</b>
+          <b>${esc(sketchId)} · ${esc(order.title || 'Untitled sketch')}</b>
           <div class="mu">${esc(order.name || '')} · ${esc(order.size || '')} · ${order.sourceType === 'shop' || order.sourceType === 'gallery' ? 'Price' : 'Estimate'} ${rs(order.amt)}</div>
           <span class="badge ${order.st < 0 ? 'bad' : ''}">${stl(order)}</span>
         </div>
@@ -123,6 +121,12 @@ function renderOrder(order) {
           ${esc(order.note || '')}
         </p>
         <a href="${order.photo || '#'}" download="ref-${esc(order.id)}.jpg">Download reference photo</a>
+        <label for="reference-${order.id}">Customer-facing and UPI reference ID</label>
+        <input id="reference-${order.id}" maxlength="40" value="${esc(sketchId)}" placeholder="AnshInk-0001">
+        <div class="row admin-actions">
+          <button class="btn o sm" onclick="saveSketchReference('${order.id}')">Save ID</button>
+          <button class="btn danger-action sm" onclick="deleteOrder('${order.id}')">Delete order</button>
+        </div>
         ${order.st === 0 ? renderNewOrderActions(order) : renderActiveOrderActions(order)}
       </div>
     </details>
@@ -174,6 +178,7 @@ async function adu(id, changes) {
     if (!current || ![3, 4].includes(changes.st) || previousStatus === changes.st) return;
 
     const label = changes.st === 3 ? 'Sketching started' : 'Sketching finished';
+    const reference = sketchReference(current);
     try {
       let recipient = current.email;
       if (!recipient && current.uid) {
@@ -186,9 +191,9 @@ async function adu(id, changes) {
         to: recipient,
         orderId: id,
         message: {
-          subject: `AnshInk order #${id}: ${label}`,
-          text: `Hello ${current.name || 'there'}, your sketch order ${id} is now marked “${label}”. View your order at ${location.origin + PG('orders')}?id=${encodeURIComponent(id)}`,
-          html: `<p>Hello ${esc(current.name || 'there')},</p><p>Your sketch order <b>#${esc(id)}</b> is now marked <b>${label}</b>.</p><p><a href="${location.origin + PG('orders')}?id=${encodeURIComponent(id)}">View your order</a></p>`
+          subject: `AnshInk order ${reference}: ${label}`,
+          text: `Hello ${current.name || 'there'}, your sketch order ${reference} is now marked “${label}”. View your order at ${location.origin + PG('orders')}?id=${encodeURIComponent(id)}`,
+          html: `<p>Hello ${esc(current.name || 'there')},</p><p>Your sketch order <b>${esc(reference)}</b> is now marked <b>${label}</b>.</p><p><a href="${location.origin + PG('orders')}?id=${encodeURIComponent(id)}">View your order</a></p>`
         }
       });
     } catch (error) {
@@ -198,6 +203,40 @@ async function adu(id, changes) {
   } catch (error) {
     console.error('Could not save order:', error);
     toast('Failed to save');
+  }
+}
+
+async function saveSketchReference(id) {
+  const input = document.getElementById(`reference-${id}`);
+  const referenceId = input?.value.trim();
+  if (!referenceId || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/.test(referenceId)) {
+    return toast('Use 1–40 letters, numbers, hyphens, or underscores for the ID.');
+  }
+  const normalized = referenceId.toLowerCase();
+  const duplicate = O.list.some(order => order.id !== id && sketchReference(order).toLowerCase() === normalized);
+  if (duplicate) return toast('That reference ID is already used by another order.');
+  await adu(id, { referenceId });
+}
+
+async function deleteOrder(id) {
+  const order = O.list.find(item => item.id === id);
+  if (!order) return;
+  const reference = sketchReference(order);
+  if (!confirm(`Permanently delete ${reference} and its uploaded order data? This cannot be undone.`)) return;
+
+  try {
+    await db.collection('orders').doc(id).delete();
+    O.list = O.list.filter(item => item.id !== id);
+    try {
+      await db.collection('mail').doc(`order-${id}`).delete();
+    } catch (error) {
+      if (error.code !== 'not-found') console.warn('Could not remove the queued new-order email:', error);
+    }
+    render();
+    toast(`${reference} deleted`);
+  } catch (error) {
+    console.error('Could not delete order:', error);
+    toast('Could not delete this order. Check Firebase permissions and try again.');
   }
 }
 

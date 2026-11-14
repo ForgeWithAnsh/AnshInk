@@ -53,12 +53,11 @@ async function renderSharedLayout() {
     </header>
   `;
 
-  const primaryNavPages = new Set(['home', 'shop', 'sketches']);
   const page = document.body.dataset.page;
   document.getElementById('primary-navigation')?.remove();
   document.body.classList.remove('has-primary-navigation');
-  if (primaryNavPages.has(page)) {
-    const active = page === 'home' ? 'home' : page === 'shop' ? 'shop' : 'sketches';
+  {
+    const active = ['home', 'shop', 'orders', 'sketches', 'reviews'].includes(page) ? page : '';
     const destinations = [
       ['home', 'Home', 'index', '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7H9v7H4a1 1 0 0 1-1-1z"/>'],
       ['shop', 'InkShop', 'shop', '<path d="M3 7h18l-1.5 13h-15z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/>'],
@@ -83,7 +82,7 @@ async function renderSharedLayout() {
       let previousY = window.scrollY;
       window.addEventListener('scroll', () => {
         const currentY = Math.max(0, window.scrollY);
-        const compactNav = window.matchMedia('(max-width: 680px), (max-width: 1100px) and (orientation: portrait), (max-height: 500px)').matches;
+      const compactNav = window.matchMedia('(max-width: 680px), (max-width: 1100px) and (orientation: portrait)').matches;
         const currentNav = $('#primary-navigation');
         if (currentNav && compactNav) {
           if (currentY < 64 || currentY < previousY - 3) {
@@ -104,7 +103,7 @@ async function renderSharedLayout() {
       }, { passive: true });
       window.addEventListener('resize', () => {
         const currentNav = $('#primary-navigation');
-        if (currentNav && !window.matchMedia('(max-width: 680px), (max-width: 1100px) and (orientation: portrait), (max-height: 500px)').matches) {
+        if (currentNav && !window.matchMedia('(max-width: 680px), (max-width: 1100px) and (orientation: portrait)').matches) {
           currentNav.classList.remove('nav-hidden', 'nav-returning');
         }
       }, { passive: true });

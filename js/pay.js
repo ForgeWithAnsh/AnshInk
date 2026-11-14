@@ -43,12 +43,12 @@ onUser(async user => {
 
 function renderPayment(order, amount) {
   const amountText = amount.toFixed(2);
-  const sketchId = String(order.id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20);
+  const sketchId = sketchReference(order).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32);
   const params = new URLSearchParams({
     pa: 'anshink.shop@axl',
     pn: 'AnshInk',
-    tr: `AI${sketchId}`.slice(0, 35),
-    tn: `Sketch ID ${sketchId}`.slice(0, 80),
+    tr: `${sketchId}-${order.id}`.slice(0, 35),
+    tn: sketchId.slice(0, 80),
     am: amountText,
     cu: 'INR'
   });
@@ -56,10 +56,10 @@ function renderPayment(order, amount) {
 
   main.innerHTML = `
     <section class="payment-panel">
-      <p class="payment-eyebrow">AnshInk · Sketch ID ${esc(order.id)}</p>
+      <p class="payment-eyebrow">${esc(sketchId)}</p>
       <h1>Complete your payment</h1>
       <p class="payment-total">${rs(amount)}</p>
-      <p class="mu">This UPI payment is for Sketch ID <b>${esc(order.id)}</b>. Please keep the amount unchanged.</p>
+      <p class="mu">This UPI payment is for <b>${esc(sketchId)}</b>. Please keep the amount unchanged.</p>
       <div class="payment-options">
         <div class="upi-option app-option">
           <h2>Pay with a UPI app</h2>

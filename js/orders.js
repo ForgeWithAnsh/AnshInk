@@ -37,7 +37,7 @@ function list() {
       <img src="${order.done || order.photo}" alt="">
       <div>
         <b>${esc(order.title || 'Sketch')}</b>
-        <div class="mu">Sketch ID ${/^\d+$/.test(order.id) ? String(order.id).padStart(4, '0') : esc(order.id)}</div>
+        <div class="mu">${esc(sketchReference(order))}</div>
         <span class="badge ${order.st < 0 ? 'bad' : ''}">${stl(order)}</span>
       </div>
     </a>
@@ -93,7 +93,7 @@ function view(id) {
     <div class="box">
       <h2>${esc(order.title || 'Sketch')}</h2>
       <img class="oimg" src="${order.done || order.photo}" alt="">
-      <div class="mu">Sketch ID ${esc(order.id)} · ordered ${new Date(order.at).toLocaleDateString('en-IN')}</div>
+      <div class="mu">${esc(sketchReference(order))} · ordered ${new Date(order.at).toLocaleDateString('en-IN')}</div>
       <p>
         ${order.sourceType === 'shop' || order.sourceType === 'gallery'
           ? esc(order.subj || (order.sourceType === 'shop' ? 'InkShop design' : 'Gallery sketch'))

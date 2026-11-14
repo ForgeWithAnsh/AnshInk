@@ -14,7 +14,7 @@ const $ = selector => document.querySelector(selector);
 let me = null;
 let O = {};
 
-/* Keep the startup indicator at the top so it does not cover the page footer. */
+/* Center the startup indicator while shared Firebase and page data load. */
 const loadingIndicator = document.createElement('div');
 loadingIndicator.id = 'page-loading';
 loadingIndicator.setAttribute('role', 'status');
@@ -68,6 +68,13 @@ $('#m').addEventListener('click', event => {
 });
 
 const rs = amount => `₹${Number(amount).toLocaleString('en-IN')}`;
+function sketchReference(order) {
+  const rawId = typeof order === 'object' && order !== null ? order.id : order;
+  const customId = typeof order === 'object' && order !== null ? String(order.referenceId || '').trim() : '';
+  if (customId) return customId;
+  const id = String(rawId || '');
+  return `AnshInk-${/^\d+$/.test(id) ? id.padStart(4, '0') : id}`;
+}
 const err = error => error?.code
   ? error.code.replace('auth/', '').replace(/-/g, ' ')
   : 'error';

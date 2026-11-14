@@ -294,6 +294,7 @@ async function placeOrder() {
         ppl: isSizePricedOrder(order) ? 1 : Number(order.selections?.people || 1),
         items: isSizePricedOrder(order) ? 0 : Number(order.selections?.details || 0),
         id: orderId,
+        referenceId: `AnshInk-${orderId}`,
         uid: me.id,
         email: me.email,
         amount: price(order),
@@ -320,9 +321,9 @@ async function placeOrder() {
         to: CFG.adminEmail,
         orderId: id,
         message: {
-          subject: `New sketch order #${id} — ${order.title || order.name}`,
+          subject: `New sketch order ${sketchReference({ id, referenceId: `AnshInk-${id}` })} — ${order.title || order.name}`,
           text: `A new sketch order was placed by ${order.name} (${me.email}). Review it in the AnshInk artist panel.`,
-          html: `<p>A new sketch order was placed.</p><p><b>Sketch ID:</b> ${esc(id)}<br><b>Customer:</b> ${esc(order.name)}<br><b>Email:</b> ${esc(me.email)}</p><p>Review it in the AnshInk artist panel.</p>`
+          html: `<p>A new sketch order was placed.</p><p><b>Sketch ID:</b> ${esc(sketchReference({ id, referenceId: `AnshInk-${id}` }))}<br><b>Customer:</b> ${esc(order.name)}<br><b>Email:</b> ${esc(me.email)}</p><p>Review it in the AnshInk artist panel.</p>`
         }
       });
     } catch (error) {
