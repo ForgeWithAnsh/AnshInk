@@ -133,6 +133,7 @@ service cloud.firestore {
             && resource.data.st == 1 && request.resource.data.st == -2
             && request.time.toMillis() > resource.data.acc + 259200000
             && onlyChanges(['st']));
+      allow delete: if isAdmin();
     }
   }
 }
