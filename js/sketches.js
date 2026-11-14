@@ -108,14 +108,19 @@ function render() {
     : items.filter(item => item.category === category).length;
   const visibleItems = visibleSketches();
 
+  disposeCategoryStrip(box.querySelector('.category-strip'));
   box.innerHTML = `
     <div class="shead"><h1>All sketches</h1></div>
-    <div class="tabs2">
-      ${Object.entries(tabs).map(([key, label]) => `
-        <button class="tab2 ${tab === key ? 'on' : ''}" onclick="tab='${key}';render()">
-          ${label} <span>${count(key)}</span>
-        </button>
-      `).join('')}
+    <div class="category-strip">
+      <div class="tabs2 category-track">
+        ${Object.entries(tabs).map(([key, label]) => `
+          <button class="tab2 ${tab === key ? 'on' : ''}" onclick="tab='${key}';render()">
+            ${label} <span>${count(key)}</span>
+          </button>
+        `).join('')}
+      </div>
+      <span class="category-fade category-fade-left" aria-hidden="true"></span>
+      <span class="category-fade category-fade-right" aria-hidden="true"></span>
     </div>
     ${isAdm() ? '<div class="abar"><button class="btn cta" onclick="addForm()">+ Add a sketch</button></div>' : ''}
     ${visibleItems.length ? `
@@ -150,6 +155,7 @@ function render() {
       </div>
     ` : '<div class="none">No sketches here yet.</div>'}
   `;
+  initCategoryStrip(box.querySelector('.category-strip'));
 }
 
 onUser(() => render());

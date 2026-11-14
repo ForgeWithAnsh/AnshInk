@@ -74,9 +74,16 @@ function renderShop() {
   $('#shop-admin-tools').innerHTML = isAdm() ? '<div class="shop-admin-add"><button class="btn" onclick="showShopProductForm()">＋ Add InkShop card</button></div>' : '';
   if (isAdm()) adminShopItems = shopProducts.slice();
   const categories = ['All', ...(me ? ['Favorites'] : []), ...(SITE.shopCategories || []).filter(category => category !== 'Favorites')];
-  $('#shop-categories').innerHTML = categories.map(category => `
-    <button class="btn ${category === selectedShopCategory ? '' : 'o'} sm" data-category="${esc(category)}" onclick="selectShopCategory(this.dataset.category)">${esc(category)}</button>
-  `).join('');
+  $('#shop-categories').innerHTML = `
+    <div class="category-track">
+      ${categories.map(category => `
+        <button class="btn ${category === selectedShopCategory ? '' : 'o'} sm" data-category="${esc(category)}" onclick="selectShopCategory(this.dataset.category)">${esc(category)}</button>
+      `).join('')}
+    </div>
+    <span class="category-fade category-fade-left" aria-hidden="true"></span>
+    <span class="category-fade category-fade-right" aria-hidden="true"></span>
+  `;
+  initCategoryStrip($('#shop-categories'));
   const visible = shopProducts.filter(product => selectedShopCategory === 'Favorites'
     ? shopFavoriteIds.has(product.id)
     : selectedShopCategory === 'All' || product.category === selectedShopCategory);

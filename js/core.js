@@ -75,6 +75,34 @@ function sketchReference(order) {
   const id = String(rawId || '');
   return `AnshInk-${/^\d+$/.test(id) ? id.padStart(4, '0') : id}`;
 }
+function disposeCategoryStrip(strip) {
+  if (!strip) return;
+  strip._categoryResizeObserver?.disconnect();
+  const existingTrack = strip.querySelector('.category-track');
+  if (existingTrack?._categoryFadeHandler) {
+    existingTrack.removeEventListener('scroll', existingTrack._categoryFadeHandler);
+  }
+}
+
+function initCategoryStrip(strip) {
+  disposeCategoryStrip(strip);
+  const track = strip?.querySelector('.category-track');
+  if (!track) return;
+  const updateFades = () => {
+    const hasOverflow = track.scrollWidth > track.clientWidth + 1;
+    strip.classList.toggle('fade-left', hasOverflow && track.scrollLeft > 1);
+    strip.classList.toggle('fade-right', hasOverflow && track.scrollLeft + track.clientWidth < track.scrollWidth - 1);
+  };
+  track._categoryFadeHandler = updateFades;
+  track.addEventListener('scroll', updateFades, { passive: true });
+  requestAnimationFrame(updateFades);
+  if ('ResizeObserver' in window) {
+    const observer = new ResizeObserver(updateFades);
+    strip._categoryResizeObserver = observer;
+    observer.observe(track);
+    observer.observe(strip);
+  }
+}
 const err = error => error?.code
   ? error.code.replace('auth/', '').replace(/-/g, ' ')
   : 'error';
