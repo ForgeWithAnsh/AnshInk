@@ -8,6 +8,7 @@
 .ord[open]{box-shadow:0 8px 24px #5c3f2b20}
 .ord-body{padding-top:12px}
 .admin-actions{margin-top:8px}
+.danger-action{background:linear-gradient(135deg,#a33,#7d2020);color:#fff;border:0}
 .save-payment-link{margin-top:6px}
 .admin-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 22px}.admin-tabs button{flex:1 1 150px;border:1px solid var(--ln);border-radius:9px;background:var(--card);padding:9px 12px;cursor:pointer;color:var(--ac);font-weight:700}.admin-tabs button.on{background:var(--ac);border-color:var(--ac);color:#fffaf1}
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.settings-grid label{min-width:0}
